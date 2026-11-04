@@ -85,9 +85,9 @@ mongoose
 
     const PORT = process.env.PORT || 5000;
 
-    app.listen(PORT, () => {
-      console.log(`ASUNAM FOOD server running on port ${PORT}`);
-    });
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`ASUNAM FOOD server running on port ${PORT}`);
+});
   })
   .catch((error) => {
     console.error("MongoDB connection failed ❌");
