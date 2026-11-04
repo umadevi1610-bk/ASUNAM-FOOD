@@ -1,39 +1,339 @@
+
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-function Login() {
-  const { loginAsCustomer } = useAuth();
+const styles = {
+  page: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "25px 16px",
+    background: "linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 50%, #DCFCE7 100%)",
+    fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
+  },
+  card: {
+    width: "100%",
+    maxWidth: "490px",
+    background: "#FFFFFF",
+    borderRadius: "22px",
+    padding: "30px",
+    border: "1px solid #D1FAE5",
+    boxShadow: "0 15px 45px rgba(22,101,52,0.09)",
+    boxSizing: "border-box",
+  },
+  logo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "11px",
+    marginBottom: "22px",
+  },
+  logoMark: {
+    width: "43px",
+    height: "43px",
+    background: "#166534",
+    color: "#FFFFFF",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "13px",
+    fontSize: "23px",
+    fontWeight: 800,
+  },
+  logoName: {
+    margin: 0,
+    color: "#14532D",
+    fontSize: "20px",
+  },
+  logoSub: {
+    color: "#166534",
+    letterSpacing: "3px",
+    fontSize: "10px",
+    fontWeight: 800,
+  },
+  tabs: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "5px",
+    background: "#F0FDF4",
+    padding: "5px",
+    borderRadius: "12px",
+    marginBottom: "25px",
+  },
+  tab: {
+    border: "none",
+    padding: "12px",
+    borderRadius: "9px",
+    background: "transparent",
+    color: "#64748B",
+    fontWeight: 700,
+    fontSize: "14px",
+    cursor: "pointer",
+  },
+  activeTab: {
+    background: "#166534",
+    color: "#FFFFFF",
+    boxShadow: "0 3px 8px rgba(22,101,52,0.15)",
+  },
+  eyebrow: {
+    display: "block",
+    color: "#166534",
+    fontSize: "10px",
+    fontWeight: 800,
+    letterSpacing: "1.8px",
+    marginBottom: "9px",
+  },
+  title: {
+    margin: "0 0 9px",
+    color: "#14532D",
+    fontSize: "27px",
+    lineHeight: 1.3,
+  },
+  subtitle: {
+    margin: "0 0 23px",
+    color: "#64748B",
+    fontSize: "13px",
+    lineHeight: 1.6,
+  },
+  roleList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "11px",
+  },
+  roleButton: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    gap: "13px",
+    padding: "15px",
+    background: "#FFFFFF",
+    border: "1px solid #D1FAE5",
+    borderRadius: "13px",
+    color: "#14532D",
+    textAlign: "left",
+    cursor: "pointer",
+    boxSizing: "border-box",
+  },
+  roleIcon: {
+    width: "45px",
+    height: "45px",
+    borderRadius: "12px",
+    background: "#DCFCE7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "22px",
+    flexShrink: 0,
+  },
+  roleContent: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: "5px",
+    minWidth: 0,
+  },
+  roleName: {
+    fontSize: "14px",
+    fontWeight: 800,
+  },
+  roleDescription: {
+    color: "#64748B",
+    fontSize: "11px",
+    lineHeight: 1.5,
+  },
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "7px",
+    marginBottom: "16px",
+  },
+  label: {
+    color: "#14532D",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+  input: {
+    width: "100%",
+    padding: "12px 13px",
+    border: "1px solid #D1FAE5",
+    borderRadius: "10px",
+    outlineColor: "#166534",
+    fontSize: "14px",
+    background: "#FFFFFF",
+    color: "#14532D",
+    boxSizing: "border-box",
+  },
+  info: {
+    background: "#F0FDF4",
+    border: "1px solid #D1FAE5",
+    padding: "12px",
+    borderRadius: "10px",
+    color: "#166534",
+    fontSize: "12px",
+    lineHeight: 1.6,
+    marginBottom: "17px",
+  },
+  error: {
+    background: "#FEF2F2",
+    border: "1px solid #FECACA",
+    color: "#B91C1C",
+    padding: "12px",
+    borderRadius: "10px",
+    fontSize: "13px",
+    marginBottom: "16px",
+    lineHeight: 1.5,
+  },
+  primaryButton: {
+    width: "100%",
+    padding: "14px",
+    border: "none",
+    borderRadius: "11px",
+    background: "#166534",
+    color: "#FFFFFF",
+    fontSize: "14px",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  backButton: {
+    display: "block",
+    margin: "19px auto 0",
+    border: "none",
+    background: "transparent",
+    color: "#166534",
+    fontSize: "13px",
+    cursor: "pointer",
+  },
+};
 
-  // null = first role selection page
-  const [selectedRole, setSelectedRole] = useState(null);
+const roles = [
+  {
+    id: "customer",
+    name: "Customer",
+    icon: "🍔",
+    description: "Order your favourite food and track deliveries.",
+  },
+  {
+    id: "restaurant",
+    name: "Restaurant Partner",
+    icon: "🏪",
+    description: "Manage your restaurant, menu and customer orders.",
+  },
+  {
+    id: "delivery",
+    name: "Delivery Partner",
+    icon: "🛵",
+    description: "Accept orders and manage your deliveries.",
+  },
+];
+
+const roleInfo = {
+  customer: {
+    loginLabel: "CUSTOMER LOGIN",
+    signupLabel: "CUSTOMER REGISTRATION",
+    loginText: "Enter your name and phone number to continue.",
+    signupText: "Create your customer account with your details.",
+    signupInfo: "You can save your delivery address after registration.",
+  },
+  restaurant: {
+    loginLabel: "RESTAURANT PARTNER LOGIN",
+    signupLabel: "RESTAURANT PARTNER REGISTRATION",
+    loginText: "Manage your restaurant and customer orders.",
+    signupText: "Create your restaurant partner account.",
+    signupInfo: "After registration, you can set up your restaurant details.",
+  },
+  delivery: {
+    loginLabel: "DELIVERY PARTNER LOGIN",
+    signupLabel: "DELIVERY PARTNER REGISTRATION",
+    loginText: "Login to accept and manage deliveries.",
+    signupText: "Create your delivery partner account.",
+    signupInfo: "After registration, complete your vehicle and delivery profile.",
+  },
+};
+
+function Login({ initialView }) {
+  const {
+    loginAsCustomer,
+    loginAsRestaurant,
+    loginAsDelivery,
+    registerAsCustomer,
+    registerAsRestaurant,
+    registerAsDelivery,
+  } = useAuth();
+
+  const validRoles = ["customer", "restaurant", "delivery"];
+
+  const requestedRole = new URLSearchParams(
+    window.location.search
+  ).get("role");
+
+  const [activeTab, setActiveTab] = useState(
+    initialView ||
+      (window.location.pathname === "/signup" ? "signup" : "login")
+  );
+
+  const [selectedRole, setSelectedRole] = useState(
+    validRoles.includes(requestedRole) ? requestedRole : ""
+  );
 
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ======================================
-  // ROLE CLICK
-  // ======================================
-  const handleRoleSelect = (role) => {
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      phone: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
     setError("");
-
-    if (role === "customer") {
-      setSelectedRole("customer");
-      return;
-    }
-
-    setSelectedRole(role);
   };
 
-  // ======================================
-  // INPUT CHANGE
-  // ======================================
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    setSelectedRole("");
+    resetForm();
+
+    window.history.replaceState(
+      {},
+      "",
+      tab === "signup" ? "/signup" : "/login"
+    );
+  };
+
+  const selectRole = (role) => {
+    setSelectedRole(role);
+    resetForm();
+
+    window.history.replaceState(
+      {},
+      "",
+      `/${activeTab}?role=${role}`
+    );
+  };
+
+  const changeRole = () => {
+    setSelectedRole("");
+    resetForm();
+
+    window.history.replaceState(
+      {},
+      "",
+      `/${activeTab}`
+    );
+  };
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
 
     setFormData((current) => ({
       ...current,
@@ -43,348 +343,426 @@ function Login() {
     setError("");
   };
 
-  // ======================================
-  // CUSTOMER LOGIN
-  // ======================================
-  const handleCustomerLogin = async (e) => {
-    e.preventDefault();
-
+  // ================================
+  // LOGIN
+  // ================================
+  const handleLogin = async (event) => {
+    event.preventDefault();
     setError("");
 
-    const cleanName = formData.name.trim();
-    const cleanPhone = formData.phone.trim();
-
-    if (!cleanName) {
-      setError("Please enter your name.");
-      return;
-    }
-
-    if (cleanName.length < 2) {
-      setError("Name must be at least 2 characters.");
-      return;
-    }
-
-    if (!cleanPhone) {
-      setError("Please enter your phone number.");
-      return;
-    }
-
-    if (!/^[0-9]{10}$/.test(cleanPhone)) {
-      setError("Please enter a valid 10-digit phone number.");
+    if (!selectedRole) {
+      setError("Please choose your account type.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const data = await loginAsCustomer({
-        name: cleanName,
-        phone: cleanPhone,
-      });
+      let data;
 
-      if (data.success) {
-        window.location.href = "/";
+      if (selectedRole === "customer") {
+        const name = formData.name.trim();
+        const phone = formData.phone.trim();
+
+        if (name.length < 2) {
+          setError("Please enter a valid name.");
+          return;
+        }
+
+        if (!/^[0-9]{10}$/.test(phone)) {
+          setError("Please enter a valid 10-digit phone number.");
+          return;
+        }
+
+        data = await loginAsCustomer({ name, phone });
       } else {
-        setError(
-          data.message ||
-            "Unable to continue. Please try again."
-        );
+        const email = formData.email.trim().toLowerCase();
+        const password = formData.password;
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          setError("Please enter a valid email address.");
+          return;
+        }
+
+        if (!password) {
+          setError("Please enter your password.");
+          return;
+        }
+
+        const loginFunction =
+          selectedRole === "restaurant"
+            ? loginAsRestaurant
+            : loginAsDelivery;
+
+        data = await loginFunction({ email, password });
+      }
+
+      if (!data?.success) {
+        setError(data?.message || "Login failed. Please try again.");
+        return;
+      }
+
+      if (selectedRole === "restaurant") {
+        window.location.href = "/restaurant/dashboard";
+      } else if (selectedRole === "delivery") {
+        window.location.href = "/delivery/dashboard";
+      } else {
+        window.location.href = "/";
       }
     } catch (err) {
-      console.error("Customer login error:", err);
-
-      setError(
-        err.message ||
-          "Unable to continue. Please try again."
-      );
+      console.error("Login error:", err);
+      setError(err.message || "Unable to login.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ======================================
-  // LOGO
-  // ======================================
-  const Logo = () => (
-    <div style={styles.logo}>
-      <div style={styles.logoMark}>A</div>
+  // ================================
+  // SIGN UP
+  // ================================
+  const handleSignup = async (event) => {
+    event.preventDefault();
+    setError("");
 
-      <div>
-        <h2 style={styles.logoTitle}>ASUNAM</h2>
-        <span style={styles.logoSub}>FOOD</span>
-      </div>
-    </div>
-  );
+    const name = formData.name.trim();
+    const email = formData.email.trim().toLowerCase();
+    const phone = formData.phone.trim();
+    const password = formData.password;
 
-  // ======================================
-  // COMING SOON
-  // ======================================
-  const renderComingSoon = (type) => {
-    const isDelivery = type === "delivery";
+    if (name.length < 2 || name.length > 50) {
+      setError("Name must contain 2 to 50 characters.");
+      return;
+    }
 
-    return (
-      <div style={styles.page}>
-        <div style={styles.card}>
-          <Logo />
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
 
-          <div style={styles.comingSoonBox}>
-            <div style={styles.comingSoonIcon}>
-              {isDelivery ? "🛵" : "🏪"}
-            </div>
+    if (!/^[0-9]{10}$/.test(phone)) {
+      setError("Please enter a valid 10-digit phone number.");
+      return;
+    }
 
-            <span style={styles.eyebrow}>
-              PARTNER PORTAL
-            </span>
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
 
-            <h1 style={styles.comingSoonTitle}>
-              {isDelivery
-                ? "Delivery Partner"
-                : "Restaurant Partner"}
-            </h1>
+    if (password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
 
-            <div style={styles.comingSoonBadge}>
-              COMING SOON
-            </div>
+    if (!selectedRole) {
+      setError("Please choose an account type.");
+      return;
+    }
 
-            <p style={styles.comingSoonText}>
-              {isDelivery
-                ? "We're getting the ASUNAM FOOD delivery partner experience ready. Partner registration will open soon."
-                : "Restaurant partner onboarding is coming soon. Soon you'll be able to list your restaurant, manage your menu and receive customer orders."}
-            </p>
+    const registrationData = {
+      name,
+      email,
+      phone,
+      password,
+    };
 
-            <button
-              type="button"
-              style={styles.secondaryButton}
-              onClick={() => {
-                setSelectedRole(null);
-                setError("");
-              }}
-            >
-              ← Back
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    try {
+      setLoading(true);
+
+      let data;
+
+      if (selectedRole === "customer") {
+        data = await registerAsCustomer(registrationData);
+      } else if (selectedRole === "restaurant") {
+        data = await registerAsRestaurant(registrationData);
+      } else {
+        data = await registerAsDelivery(registrationData);
+      }
+
+      if (!data?.success) {
+        setError(
+          data?.message || "Registration failed. Please try again."
+        );
+        return;
+      }
+
+      if (selectedRole === "restaurant") {
+        window.location.href = "/restaurant/onboarding";
+      } else if (selectedRole === "delivery") {
+        window.location.href = "/delivery/onboarding";
+      } else {
+        window.location.href = "/";
+      }
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError(err.message || "Unable to create your account.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ======================================
-  // CUSTOMER LOGIN PAGE
-  // ======================================
-  if (selectedRole === "customer") {
-    return (
-      <div style={styles.page}>
-        <div style={styles.card}>
-          <Logo />
+  const currentRole = selectedRole ? roleInfo[selectedRole] : null;
+
+  return (
+    <div style={styles.page}>
+      <main style={styles.card}>
+        {/* LOGO */}
+        <div style={styles.logo}>
+          <div style={styles.logoMark}>A</div>
+          <div>
+            <h2 style={styles.logoName}>ASUNAM</h2>
+            <span style={styles.logoSub}>FOOD</span>
+          </div>
+        </div>
+
+        {/* LOGIN / SIGNUP TABS */}
+        <div style={styles.tabs}>
+          <button
+            type="button"
+            style={{
+              ...styles.tab,
+              ...(activeTab === "login" ? styles.activeTab : {}),
+            }}
+            onClick={() => switchTab("login")}
+          >
+            Sign In
+          </button>
 
           <button
             type="button"
-            style={styles.backLink}
-            onClick={() => {
-              setSelectedRole(null);
-              setError("");
+            style={{
+              ...styles.tab,
+              ...(activeTab === "signup" ? styles.activeTab : {}),
             }}
+            onClick={() => switchTab("signup")}
           >
-            ← Choose account type
+            Sign Up
           </button>
+        </div>
 
-          <div style={styles.heading}>
+        {/* ROLE SELECTION */}
+        {!selectedRole ? (
+          <>
             <span style={styles.eyebrow}>
-              CUSTOMER LOGIN
+              {activeTab === "login"
+                ? "WELCOME BACK"
+                : "CREATE YOUR ACCOUNT"}
             </span>
 
             <h1 style={styles.title}>
-              Welcome to ASUNAM FOOD
+              {activeTab === "login"
+                ? "Welcome to ASUNAM FOOD"
+                : "Join ASUNAM FOOD"}
             </h1>
 
             <p style={styles.subtitle}>
-              Enter your name and phone number to
-              continue.
+              {activeTab === "login"
+                ? "Choose your account type to sign in."
+                : "Choose your account type to get started."}
             </p>
-          </div>
 
-          {error && (
-            <div style={styles.error}>
-              ⚠️ {error}
+            <div style={styles.roleList}>
+              {roles.map((role) => (
+                <button
+                  type="button"
+                  key={role.id}
+                  style={styles.roleButton}
+                  onClick={() => selectRole(role.id)}
+                >
+                  <span style={styles.roleIcon}>{role.icon}</span>
+
+                  <span style={styles.roleContent}>
+                    <strong style={styles.roleName}>
+                      {role.name}
+                    </strong>
+                    <span style={styles.roleDescription}>
+                      {role.description}
+                    </span>
+                  </span>
+
+                  <strong style={{ color: "#166534", fontSize: "18px" }}>
+                    →
+                  </strong>
+                </button>
+              ))}
             </div>
-          )}
-
-          <form onSubmit={handleCustomerLogin}>
-            <div style={styles.field}>
-              <label>Full Name</label>
-
-              <input
-                type="text"
-                name="name"
-                placeholder="Enter your name"
-                value={formData.name}
-                onChange={handleChange}
-                autoComplete="name"
-              />
-            </div>
-
-            <div style={styles.field}>
-              <label>Phone Number</label>
-
-              <div style={styles.phoneInput}>
-                <span style={styles.countryCode}>
-                  +91
-                </span>
-
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder="Enter 10-digit mobile number"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  maxLength={10}
-                  inputMode="numeric"
-                  autoComplete="tel"
-                />
-              </div>
-            </div>
-
-            <div style={styles.infoBox}>
-              <span>🔐</span>
-
-              <p>
-                Phone OTP verification will be added
-                later. For now, you can continue with
-                your name and phone number.
-              </p>
-            </div>
-
+          </>
+        ) : (
+          <>
             <button
-              type="submit"
-              disabled={loading}
+              type="button"
               style={{
-                ...styles.loginButton,
-                opacity: loading ? 0.7 : 1,
+                ...styles.backButton,
+                margin: "0 0 20px",
               }}
+              onClick={changeRole}
             >
-              {loading
-                ? "Continuing..."
-                : "Continue as Customer →"}
+              ← Change account type
             </button>
-          </form>
 
-          <button
-            type="button"
-            style={styles.backButton}
-            onClick={() => {
-              window.location.href = "/";
-            }}
-          >
-            ← Back to home
-          </button>
-        </div>
-      </div>
-    );
-  }
+            <span style={styles.eyebrow}>
+              {activeTab === "login"
+                ? currentRole.loginLabel
+                : currentRole.signupLabel}
+            </span>
 
-  // ======================================
-  // DELIVERY PARTNER
-  // ======================================
-  if (selectedRole === "delivery") {
-    return renderComingSoon("delivery");
-  }
+            <h1 style={styles.title}>
+              {activeTab === "login"
+                ? "Welcome back!"
+                : "Create your account"}
+            </h1>
 
-  // ======================================
-  // RESTAURANT PARTNER
-  // ======================================
-  if (selectedRole === "restaurant") {
-    return renderComingSoon("restaurant");
-  }
+            <p style={styles.subtitle}>
+              {activeTab === "login"
+                ? currentRole.loginText
+                : currentRole.signupText}
+            </p>
 
-  // ======================================
-  // FIRST PAGE — ROLE SELECTION
-  // ======================================
-  return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <Logo />
+            {error && (
+              <div style={styles.error}>⚠️ {error}</div>
+            )}
 
-        <div style={styles.heading}>
-          <span style={styles.eyebrow}>
-            WELCOME TO ASUNAM FOOD
-          </span>
+            <form
+              onSubmit={
+                activeTab === "login"
+                  ? handleLogin
+                  : handleSignup
+              }
+            >
+              {/* CUSTOMER NAME */}
+              {(activeTab === "signup" ||
+                (activeTab === "login" &&
+                  selectedRole === "customer")) && (
+                <div style={styles.field}>
+                  <label style={styles.label}>Full Name</label>
+                  <input
+                    style={styles.input}
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Enter your full name"
+                    autoComplete="name"
+                    minLength={2}
+                    maxLength={50}
+                    required
+                  />
+                </div>
+              )}
 
-          <h1 style={styles.title}>
-            How do you want to continue?
-          </h1>
+              {/* EMAIL */}
+              {(activeTab === "signup" ||
+                selectedRole !== "customer") && (
+                <div style={styles.field}>
+                  <label style={styles.label}>Email Address</label>
+                  <input
+                    style={styles.input}
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
+              )}
 
-          <p style={styles.subtitle}>
-            Choose your account type to continue.
-          </p>
-        </div>
+              {/* PHONE */}
+              {(activeTab === "signup" ||
+                selectedRole === "customer") && (
+                <div style={styles.field}>
+                  <label style={styles.label}>Phone Number</label>
+                  <input
+                    style={styles.input}
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="10-digit mobile number"
+                    maxLength={10}
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    required
+                  />
+                </div>
+              )}
 
-        <div style={styles.roleList}>
-          {/* CUSTOMER */}
-          <button
-            type="button"
-            className="role-card"
-            style={styles.roleCard}
-            onClick={() =>
-              handleRoleSelect("customer")
-            }
-          >
-            <div style={styles.roleIcon}>🍔</div>
+              {/* PASSWORD */}
+              {(activeTab === "signup" ||
+                selectedRole !== "customer") && (
+                <div style={styles.field}>
+                  <label style={styles.label}>Password</label>
+                  <input
+                    style={styles.input}
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="At least 6 characters"
+                    autoComplete={
+                      activeTab === "signup"
+                        ? "new-password"
+                        : "current-password"
+                    }
+                    minLength={6}
+                    required
+                  />
+                </div>
+              )}
 
-            <div style={styles.roleContent}>
-              <strong>Customer</strong>
+              {/* CONFIRM PASSWORD */}
+              {activeTab === "signup" && (
+                <div style={styles.field}>
+                  <label style={styles.label}>Confirm Password</label>
+                  <input
+                    style={styles.input}
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Enter password again"
+                    autoComplete="new-password"
+                    required
+                  />
+                </div>
+              )}
 
-              <span>
-                Order food and track your delivery
-              </span>
-            </div>
+              {activeTab === "signup" ? (
+                <div style={styles.info}>
+                  🔒 {currentRole.signupInfo}
+                </div>
+              ) : selectedRole === "customer" ? (
+                <div style={styles.info}>
+                  🔐 Customer login currently uses name and phone number.
+                  Phone OTP verification can be added later.
+                </div>
+              ) : (
+                <div style={styles.info}>
+                  🔐 Use your registered partner email and password.
+                </div>
+              )}
 
-            <div style={styles.roleArrow}>→</div>
-          </button>
-
-          {/* DELIVERY */}
-          <button
-            type="button"
-            className="role-card"
-            style={styles.roleCard}
-            onClick={() =>
-              handleRoleSelect("delivery")
-            }
-          >
-            <div style={styles.roleIcon}>🛵</div>
-
-            <div style={styles.roleContent}>
-              <strong>Delivery Partner</strong>
-
-              <span>
-                Deliver orders and earn with ASUNAM
-              </span>
-            </div>
-
-            <div style={styles.roleArrow}>→</div>
-          </button>
-
-          {/* RESTAURANT */}
-          <button
-            type="button"
-            className="role-card"
-            style={styles.roleCard}
-            onClick={() =>
-              handleRoleSelect("restaurant")
-            }
-          >
-            <div style={styles.roleIcon}>🏪</div>
-
-            <div style={styles.roleContent}>
-              <strong>Restaurant Partner</strong>
-
-              <span>
-                Manage your restaurant and orders
-              </span>
-            </div>
-
-            <div style={styles.roleArrow}>→</div>
-          </button>
-        </div>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  ...styles.primaryButton,
+                  opacity: loading ? 0.7 : 1,
+                  cursor: loading ? "wait" : "pointer",
+                }}
+              >
+                {loading
+                  ? activeTab === "login"
+                    ? "Signing in..."
+                    : "Creating account..."
+                  : activeTab === "login"
+                  ? "Sign In →"
+                  : "Create Account →"}
+              </button>
+            </form>
+          </>
+        )}
 
         <button
           type="button"
@@ -393,330 +771,11 @@ function Login() {
             window.location.href = "/";
           }}
         >
-          ← Back to home
+          ← Back to Home
         </button>
-      </div>
+      </main>
     </div>
   );
-}
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "30px 20px",
-    background:
-      "linear-gradient(135deg, #fff8f5 0%, #fff 50%, #fff1eb 100%)",
-    fontFamily: "Arial, sans-serif",
-    boxSizing: "border-box",
-  },
-
-  card: {
-    width: "100%",
-    maxWidth: "500px",
-    background: "#fff",
-    borderRadius: "24px",
-    padding: "34px",
-    boxShadow:
-      "0 20px 60px rgba(0,0,0,0.10)",
-    border: "1px solid #f2e6e1",
-    boxSizing: "border-box",
-  },
-
-  logo: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginBottom: "30px",
-  },
-
-  logoMark: {
-    width: "42px",
-    height: "42px",
-    borderRadius: "12px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#ff5a36",
-    color: "#fff",
-    fontSize: "21px",
-    fontWeight: "800",
-  },
-
-  logoTitle: {
-    margin: 0,
-    fontSize: "18px",
-    lineHeight: 1,
-    color: "#171717",
-  },
-
-  logoSub: {
-    fontSize: "9px",
-    letterSpacing: "3px",
-    fontWeight: "700",
-    color: "#ff5a36",
-  },
-
-  heading: {
-    marginBottom: "25px",
-  },
-
-  eyebrow: {
-    fontSize: "10px",
-    fontWeight: "800",
-    letterSpacing: "1.8px",
-    color: "#ff5a36",
-  },
-
-  title: {
-    margin: "8px 0 7px",
-    fontSize: "28px",
-    lineHeight: 1.2,
-    color: "#171717",
-  },
-
-  subtitle: {
-    margin: 0,
-    color: "#777",
-    fontSize: "14px",
-    lineHeight: 1.5,
-  },
-
-  roleList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-
-  roleCard: {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    gap: "13px",
-    padding: "15px",
-    borderRadius: "15px",
-    border: "1px solid #e8dfda",
-    background: "#fff",
-    cursor: "pointer",
-    textAlign: "left",
-  },
-
-  roleIcon: {
-    width: "46px",
-    height: "46px",
-    borderRadius: "13px",
-    background: "#fff0eb",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "22px",
-    flexShrink: 0,
-  },
-
-  roleContent: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-  },
-
-  roleArrow: {
-    color: "#ff5a36",
-    fontSize: "19px",
-    fontWeight: "700",
-  },
-
-  field: {
-    marginBottom: "18px",
-  },
-
-  phoneInput: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    border: "1px solid #e6ddd8",
-    borderRadius: "12px",
-    paddingLeft: "13px",
-    background: "#fff",
-  },
-
-  countryCode: {
-    fontWeight: "600",
-    color: "#555",
-    fontSize: "14px",
-  },
-
-  infoBox: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "9px",
-    marginBottom: "18px",
-    padding: "12px 13px",
-    borderRadius: "12px",
-    background: "#faf7f5",
-    border: "1px solid #eee5e0",
-  },
-
-  error: {
-    marginBottom: "18px",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    background: "#fff0ed",
-    color: "#d83b1f",
-    fontSize: "13px",
-    fontWeight: "600",
-  },
-
-  loginButton: {
-    width: "100%",
-    border: "none",
-    borderRadius: "14px",
-    padding: "14px",
-    background: "#ff5a36",
-    color: "#fff",
-    fontSize: "15px",
-    fontWeight: "700",
-    cursor: "pointer",
-  },
-
-  backLink: {
-    border: "none",
-    background: "transparent",
-    color: "#777",
-    padding: 0,
-    cursor: "pointer",
-    fontSize: "13px",
-    marginBottom: "20px",
-  },
-
-  backButton: {
-    display: "block",
-    margin: "20px auto 0",
-    border: "none",
-    background: "transparent",
-    color: "#777",
-    cursor: "pointer",
-    fontSize: "13px",
-  },
-
-  comingSoonBox: {
-    textAlign: "center",
-    padding: "10px 5px 5px",
-  },
-
-  comingSoonIcon: {
-    fontSize: "62px",
-    marginBottom: "12px",
-  },
-
-  comingSoonTitle: {
-    margin: "8px 0 14px",
-    fontSize: "27px",
-    color: "#171717",
-  },
-
-  comingSoonBadge: {
-    display: "inline-block",
-    padding: "7px 12px",
-    borderRadius: "999px",
-    background: "#fff0eb",
-    color: "#ff5a36",
-    fontSize: "10px",
-    fontWeight: "800",
-    letterSpacing: "1px",
-  },
-
-  comingSoonText: {
-    maxWidth: "380px",
-    margin: "18px auto 22px",
-    color: "#777",
-    lineHeight: 1.6,
-    fontSize: "14px",
-  },
-
-  secondaryButton: {
-    border: "1px solid #ddd",
-    background: "#fff",
-    color: "#222",
-    padding: "11px 18px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "700",
-  },
-};
-
-const styleSheet = document.createElement("style");
-
-styleSheet.innerHTML = `
-  form label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 13px;
-    font-weight: 700;
-    color: #333;
-  }
-
-  form input {
-    width: 100%;
-    padding: 13px 14px;
-    border: 1px solid #e6ddd8;
-    border-radius: 12px;
-    outline: none;
-    font-size: 14px;
-    background: #fff;
-    color: #222;
-    transition: 0.2s ease;
-    box-sizing: border-box;
-  }
-
-  form input:focus {
-    border-color: #ff5a36;
-    box-shadow: 0 0 0 3px rgba(255,90,54,0.10);
-  }
-
-  .phoneInput input {
-    border: none;
-    padding-left: 2px;
-  }
-
-  .phoneInput input:focus {
-    box-shadow: none;
-  }
-
-  .role-card:hover {
-    border-color: #ff5a36;
-    transform: translateY(-1px);
-  }
-
-  .roleContent strong {
-    color: #222;
-    font-size: 14px;
-  }
-
-  .roleContent span {
-    color: #888;
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  .infoBox p {
-    margin: 0;
-    color: #777;
-    font-size: 12px;
-    line-height: 1.5;
-  }
-
-  @media (max-width: 520px) {
-    .role-card {
-      padding: 13px;
-    }
-  }
-`;
-
-if (!document.head.contains(styleSheet)) {
-  document.head.appendChild(styleSheet);
 }
 
 export default Login;

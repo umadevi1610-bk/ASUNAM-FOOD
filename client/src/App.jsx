@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 
+import SplashScreen from "./pages/SplashScreen";
 import Login from "./pages/Login";
+import RestaurantOnboarding from "./pages/RestaurantOnboarding";
 import Orders from "./pages/Orders";
 import Checkout from "./pages/Checkout";
 import OrderTracking from "./pages/OrderTracking";
@@ -10,31 +13,136 @@ import RestaurantDetails from "./pages/RestaurantDetails";
 import FoodDetails from "./pages/FoodDetails";
 import Cart from "./pages/Cart";
 
+import RestaurantDashboard from "./pages/restaurant/RestaurantDashboard";
+import ManageMenu from "./pages/restaurant/ManageMenu";
+import RestaurantOrders from "./pages/restaurant/RestaurantOrders";
+import RestaurantProfile from "./pages/restaurant/RestaurantProfile";
+
+import DeliveryDashboard from "./pages/DeliveryDashboard";
+import DeliveryProfile from "./pages/DeliveryProfile";
+
 import { getRestaurants } from "./services/restaurantService";
 import { getFoods } from "./services/foodService";
+
 import { useAuth } from "./context/AuthContext";
 import { useCart } from "./context/CartContext";
 
+// ======================================
+// CATEGORY DATA
+// ======================================
+
 const categories = [
-  { name: "All", icon: "🍽️" },
-  { name: "Biryani", icon: "🍛" },
-  { name: "Pizza", icon: "🍕" },
-  { name: "Burger", icon: "🍔" },
-  { name: "Chinese", icon: "🥡" },
-  { name: "Desserts", icon: "🍰" },
-  { name: "Drinks", icon: "🥤" },
+  {
+    name: "All",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200",
+  },
+  {
+    name: "Biryani",
+    image: "https://images.unsplash.com/photo-1563379091339-03246963d96c?w=200",
+  },
+  {
+    name: "South Indian",
+    image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=200",
+  },
+  {
+    name: "North Indian",
+    image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=200",
+  },
+  {
+    name: "Chicken",
+    image: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=200",
+  },
+  {
+    name: "Pizza",
+    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200",
+  },
+  {
+    name: "Burger",
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200",
+  },
+  {
+    name: "Chinese",
+    image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=200",
+  },
+  {
+    name: "Desserts",
+    image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=200",
+  },
+  {
+    name: "Drinks",
+    image: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200",
+  },
 ];
 
+// ======================================
+// CATEGORY MATCHING
+// ======================================
+
+const categoryKeywords = {
+  "Biryani": ["biryani"],
+  "South Indian": [
+    "south indian", "dosa", "idli", "uttapam",
+    "sambar", "pongal", "tiffin",
+  ],
+  "North Indian": [
+    "north indian", "naan", "roti", "paneer",
+    "punjabi", "paratha",
+  ],
+  "Chicken": ["chicken"],
+  "Pizza": ["pizza"],
+  "Burger": ["burger"],
+  "Chinese": [
+    "chinese", "noodles", "manchurian", "fried rice",
+  ],
+  "Desserts": [
+    "dessert", "cake", "ice cream", "sweet",
+  ],
+  "Drinks": [
+    "drink", "juice", "shake", "coffee", "tea",
+  ],
+};
+
+const matchesCategory = (category, value) => {
+  if (category === "All") return true;
+
+  const text = String(value || "").toLowerCase();
+
+  const keywords = categoryKeywords[category] || [
+    category.toLowerCase(),
+  ];
+
+  return keywords.some((keyword) => text.includes(keyword));
+};
+
+// ======================================
+// APP
+// ======================================
+
 function App() {
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [search, setSearch] = useState("");
+  const [showSplash, setShowSplash] = useState(() => {
+    const isHome = window.location.pathname === "/";
+    const alreadyShown =
+      sessionStorage.getItem("asunamSplashShown") === "true";
+
+    return isHome && !alreadyShown;
+  });
+
   const [restaurants, setRestaurants] = useState([]);
   const [popularFoods, setPopularFoods] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
+
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const [vegMode, setVegMode] = useState(false);
+  const [under250, setUnder250] = useState(false);
+  const [topRated, setTopRated] = useState(false);
+
   const [showCart, setShowCart] = useState(false);
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   const {
     cart,
@@ -46,59 +154,50 @@ function App() {
   } = useCart();
 
   const currentPath = window.location.pathname;
-  const restaurantMatch = currentPath.match(/^\/restaurants\/([^/]+)$/);
-  const orderMatch = currentPath.match(/^\/orders\/([^/]+)$/);
-  const foodMatch = currentPath.match(/^\/foods\/([^/]+)$/);
 
-  if (currentPath === "/login") {
-    return <Login />;
-  }
-
-  if (currentPath === "/orders") {
-    return <Orders />;
-  }
-
-  if (currentPath === "/checkout") {
-    return <Checkout />;
-  } 
-
-  if (currentPath === "/profile") {
-  return <Profile />;
-  }
-
-  if (currentPath === "/cart") {
-  return <Cart />;
-  }
-
-  if (restaurantMatch) {
-  return (
-    <RestaurantDetails
-      restaurantId={restaurantMatch[1]}
-    />
+  const restaurantMatch = currentPath.match(
+    /^\/restaurants\/([^/]+)$/
   );
-}
 
-  if (foodMatch) {
-  return (
-    <FoodDetails
-      foodId={foodMatch[1]}
-    />
+  const foodMatch = currentPath.match(
+    /^\/foods\/([^/]+)$/
   );
-}
 
-  if (orderMatch) {
-    const orderId = orderMatch[1];
-    return <OrderTracking orderId={orderId} />;
-  }
+  const orderMatch = currentPath.match(
+    /^\/orders\/([^/]+)$/
+  );
 
-  // LOAD REAL DATA FROM BACKEND
+  // ======================================
+  // SPLASH SCREEN
+  // ======================================
+
+  const finishSplash = useCallback(() => {
+    sessionStorage.setItem("asunamSplashShown", "true");
+    setShowSplash(false);
+    window.location.replace("/login");
+  }, []);
+
+  useEffect(() => {
+    if (!showSplash || authLoading) return;
+
+    const timer = setTimeout(finishSplash, 5000);
+
+    return () => clearTimeout(timer);
+  }, [showSplash, authLoading, finishSplash]);
+
+  // ======================================
+  // LOAD DATA
+  // ======================================
+
   useEffect(() => {
     if (currentPath !== "/") {
       setLoading(false);
       return;
     }
 
-    const loadHomeData = async () => {
+    let cancelled = false;
+
+    const loadData = async () => {
       try {
         setLoading(true);
         setFetchError("");
@@ -108,92 +207,154 @@ function App() {
           getFoods(),
         ]);
 
-        const mappedRestaurants = (restaurantData.restaurants || []).map(
-          (restaurant) => ({
+        if (cancelled) return;
+
+        const restaurantList =
+          restaurantData?.restaurants ||
+          (Array.isArray(restaurantData) ? restaurantData : []);
+
+        const foodList =
+          foodData?.foods ||
+          (Array.isArray(foodData) ? foodData : []);
+
+        setRestaurants(
+          restaurantList.map((restaurant) => ({
             id: restaurant._id,
             name: restaurant.name,
+
             cuisine: Array.isArray(restaurant.cuisine)
               ? restaurant.cuisine.join(" • ")
               : restaurant.cuisine || "Food & Restaurant",
-            rating: Number(restaurant.rating || 0).toFixed(1),
-            time:
-              restaurant.openingTime && restaurant.closingTime
-                ? `${restaurant.openingTime} - ${restaurant.closingTime}`
-                : "Open now",
-            price:
-              Number(restaurant.minimumOrderAmount || 0) > 0
-                ? `Min ₹${restaurant.minimumOrderAmount}`
-                : "No minimum order",
+
+            rating: Number(restaurant.rating || 0),
+            isOpen: Boolean(restaurant.isOpen),
+
             image:
               restaurant.image ||
-              "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=85",
-            cuisineList: Array.isArray(restaurant.cuisine)
-              ? restaurant.cuisine
-              : [],
-          })
+              "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=700",
+
+            minimumOrderAmount:
+              Number(restaurant.minimumOrderAmount || 0),
+
+            openingTime: restaurant.openingTime,
+            closingTime: restaurant.closingTime,
+          }))
         );
 
-        const mappedFoods = (foodData.foods || []).map((food) => ({
-          id: food._id,
-          name: food.name,
-          restaurant:
-            food.restaurant?.name ||
-            "ASUNAM FOOD",
-          restaurantId:
-            food.restaurant?._id ||
-            food.restaurant ||
-            null,
-          category: food.category,
-          price: food.price,
-          image:
-            food.image ||
-            "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=700&q=85",
-          rating: Number(food.rating || 0).toFixed(1),
-          isVeg: food.isVeg,
-          isAvailable: food.isAvailable,
-        }));
+        setPopularFoods(
+          foodList.map((food) => ({
+            id: food._id,
+            name: food.name,
+            restaurant: food.restaurant?.name || "ASUNAM FOOD",
+            restaurantId: food.restaurant?._id || food.restaurant,
+            category: food.category || "",
+            price: Number(food.price || 0),
+            rating: Number(food.rating || 0),
+            isVeg: Boolean(food.isVeg),
+            isAvailable: food.isAvailable !== false,
 
-        setRestaurants(mappedRestaurants);
-        setPopularFoods(mappedFoods);
+            image:
+              food.image ||
+              "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=700",
+          }))
+        );
       } catch (error) {
-        console.error("Failed to load home data:", error.message);
-        setFetchError(
-          "Could not load restaurants and food from the server. Please make sure the backend is running."
-        );
+        if (!cancelled) {
+          console.error(error);
+          setFetchError("Unable to load food. Please check your connection.");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    loadHomeData();
-  }, []);
+    loadData();
 
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPath]);
+
+  // ======================================
+  // FILTER DATA
+  // ======================================
+
+  const filteredRestaurants = restaurants.filter((restaurant) => {
+    const text = `${restaurant.name} ${restaurant.cuisine}`;
+
+    const categoryMatch = matchesCategory(activeCategory, text);
+    const searchMatch = text.toLowerCase().includes(search.toLowerCase());
+
+    const ratingMatch = !topRated || restaurant.rating >= 4;
+
+    return categoryMatch && searchMatch && ratingMatch;
+  });
+
+  const filteredFoods = popularFoods.filter((food) => {
+    const text =
+      `${food.name} ${food.category} ${food.restaurant}`;
+
+    const categoryMatch = matchesCategory(
+      activeCategory,
+      `${food.category} ${food.name}`
+    );
+
+    const searchMatch = text.toLowerCase().includes(search.toLowerCase());
+
+    const vegMatch = !vegMode || food.isVeg;
+    const priceMatch = !under250 || food.price < 250;
+    const ratingMatch = !topRated || food.rating >= 4;
+
+    return (
+      categoryMatch &&
+      searchMatch &&
+      vegMatch &&
+      priceMatch &&
+      ratingMatch
+    );
+  });
+
+  // ======================================
+  // SEARCH
+  // ======================================
+
+  const focusSearch = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    document.getElementById("home-food-search")?.focus();
+  };
+
+  const handleSearch = () => {
+    document.getElementById("recommended")?.scrollIntoView({
+      behavior: "smooth",
+    });
+  };
+
+  // ======================================
   // CATEGORY CLICK
+  // ======================================
+
   const handleCategoryClick = (category) => {
     setActiveCategory(category);
 
-    setTimeout(() => {
-      document
-        .getElementById("restaurants")
-        ?.scrollIntoView({ behavior: "smooth" });
-    }, 50);
+    document.getElementById("recommended")?.scrollIntoView({
+      behavior: "smooth",
+    });
   };
 
-  // VIEW ALL
-  const handleViewAll = () => {
-    setActiveCategory("All");
+  // ======================================
+  // ADD TO CART
+  // ======================================
 
-    setTimeout(() => {
-      document
-        .getElementById("restaurants")
-        ?.scrollIntoView({ behavior: "smooth" });
-    }, 50);
-  };
-
-  // ADD TO REAL BACKEND CART
   const handleAddToCart = async (food) => {
     if (!isAuthenticated) {
       alert("Please login first to add food to your cart.");
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!food.isAvailable) {
+      alert("This food is currently unavailable.");
       return;
     }
 
@@ -201,626 +362,497 @@ function App() {
       await addItem(food.id, 1);
       setShowCart(true);
     } catch (error) {
-      console.error("Add to cart error:", error.message);
       alert(error.message);
     }
   };
 
-  // SEARCH + CATEGORY FILTER
-  const filteredRestaurants = restaurants.filter((restaurant) => {
-    const matchesCategory =
-      activeCategory === "All" ||
-      restaurant.cuisineList.some(
-        (item) =>
-          item.toLowerCase() === activeCategory.toLowerCase()
-      );
+  // ======================================
+  // ROUTES
+  // ======================================
 
-    const searchText =
-      `${restaurant.name} ${restaurant.cuisine}`.toLowerCase();
+  if (showSplash) return <SplashScreen />;
 
-    const matchesSearch = searchText.includes(search.toLowerCase());
+  if (currentPath === "/login") return <Login />;
 
-    return matchesCategory && matchesSearch;
-  });
+  if (currentPath === "/signup") {
+    return <Login initialView="signup" />;
+  }
 
-  const filteredFoods = popularFoods.filter((food) => {
-    const matchesCategory =
-      activeCategory === "All" ||
-      food.category.toLowerCase() === activeCategory.toLowerCase();
+  if (currentPath === "/orders") return <Orders />;
+  if (currentPath === "/checkout") return <Checkout />;
+  if (currentPath === "/cart") return <Cart />;
+  if (currentPath === "/profile") return <Profile />;
 
-    const searchText =
-      `${food.name} ${food.restaurant}`.toLowerCase();
+  if (currentPath === "/restaurant/onboarding") {
+    return <RestaurantOnboarding />;
+  }
 
-    const matchesSearch = searchText.includes(search.toLowerCase());
+  if (currentPath === "/restaurant/dashboard") {
+    return <RestaurantDashboard />;
+  }
 
-    return matchesCategory && matchesSearch;
-  });
+  if (currentPath === "/restaurant/menu") {
+    return <ManageMenu />;
+  }
+
+  if (currentPath === "/restaurant/orders") {
+    return <RestaurantOrders />;
+  }
+
+  if (currentPath === "/restaurant/profile") {
+    return <RestaurantProfile />;
+  }
+
+  if (currentPath === "/delivery/dashboard") {
+    return <DeliveryDashboard />;
+  }
+
+  if (currentPath === "/delivery/profile") {
+    return <DeliveryProfile />;
+  }
+
+  if (restaurantMatch) {
+    return (
+      <RestaurantDetails restaurantId={restaurantMatch[1]} />
+    );
+  }
+
+  if (foodMatch) {
+    return <FoodDetails foodId={foodMatch[1]} />;
+  }
+
+  if (orderMatch) {
+    return <OrderTracking orderId={orderMatch[1]} />;
+  }
+
+  // ======================================
+  // HOME PAGE
+  // ======================================
 
   return (
-    <div className="app">
+    <div className="app home-page">
 
-      {/* NAVBAR */}
+      {/* HEADER */}
+
       <header className="navbar">
-
-        <div className="logo">
+        <a href="#home" className="logo">
           <div className="logo-mark">A</div>
 
           <div>
             <h2>ASUNAM</h2>
             <span>FOOD</span>
           </div>
-        </div>
+        </a>
 
         <nav>
-          <a className="active" href="#home">
-            Home
-          </a>
-
-          <a href="#restaurants">
-            Restaurants
-          </a>
-
-          <a href="#popular">
-            Popular
-          </a>
-
-          <a href="#offers">
-            Offers
-          </a>
+          <a href="#home" className="active">Home</a>
+          <a href="#categories">Categories</a>
+          <a href="#recommended">Restaurants</a>
+          <a href="#popular">Popular Food</a>
         </nav>
 
         <div className="nav-actions">
-
-          <button className="location">
-            📍 <span>Chennai</span>
+          <button
+            className="header-orders-btn"
+            onClick={() => window.location.href = "/orders"}
+          >
+            Orders
           </button>
 
-            <button
-              className="cart-btn"
-              onClick={() => {
-                window.location.href = "/cart";
-              }}
-            >
-              🛒
-              {itemCount > 0 && <b>{itemCount}</b>}
-            </button>
+          <button
+            className="cart-btn"
+            onClick={() => setShowCart(true)}
+            aria-label="Open cart"
+          >
+            🛒
+            {itemCount > 0 && <b>{itemCount}</b>}
+          </button>
 
-            <button
-              className="profile-btn"
-              onClick={() => {
-                window.location.href = "/profile";
-              }}
-            >
-              👤
-            </button>
-
+          <button
+            className="profile-btn"
+            onClick={() => window.location.href = "/profile"}
+            aria-label="Profile"
+          >
+            👤
+          </button>
         </div>
       </header>
 
-
-      {/* HERO */}
       <main id="home">
 
-        <section className="hero-section">
+        {/* SEARCH AND VEG FILTER */}
 
-          <div className="hero-content">
+        <section className="search-area">
+          <div className="search-box">
+            <span>🔍</span>
 
-            <div className="offer-pill">
-              ✨ Delicious food, delivered fast
-            </div>
+            <input
+              id="home-food-search"
+              type="search"
+              placeholder='Search "spicy biryani"'
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSearch();
+              }}
+            />
+
+            {search && (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearch("")}
+                type="button"
+              >
+                ×
+              </button>
+            )}
+
+            <button
+              className="search-submit"
+              onClick={handleSearch}
+              type="button"
+            >
+              Search
+            </button>
+          </div>
+
+          <button
+            className={`veg-toggle ${vegMode ? "veg-enabled" : ""}`}
+            onClick={() => setVegMode(!vegMode)}
+            type="button"
+            aria-pressed={vegMode}
+          >
+            <span>VEG</span>
+            <small>MODE</small>
+            <i />
+          </button>
+        </section>
+
+        {/* PROMOTIONAL BANNER */}
+
+        <section className="promo-banner">
+          <div className="promo-content">
+            <span className="promo-kicker">WELCOME TO ASUNAM FOOD</span>
 
             <h1>
-              Your favourite food,
+              Good food.
               <br />
-              <span>at your doorstep.</span>
+              <span>Great moments.</span>
             </h1>
 
             <p>
-              Discover the best restaurants around you,
-              order your favourite meals and enjoy them
-              without leaving your home.
+              Discover delicious meals from your favourite local restaurants.
             </p>
 
-            <div className="search-box">
-
-              <span>🔍</span>
-
-              <input
-                type="text"
-                placeholder="Search for food or restaurants..."
-                value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
-              />
-
-              <button>
-                Search
-              </button>
-
-            </div>
-
-            <div className="hero-info">
-
-              <div>
-                <strong>500+</strong>
-                <span>Restaurants</span>
-              </div>
-
-              <div>
-                <strong>10K+</strong>
-                <span>Happy customers</span>
-              </div>
-
-              <div>
-                <strong>30 min</strong>
-                <span>Average delivery</span>
-              </div>
-
-            </div>
-
+            <button
+              type="button"
+              onClick={() => {
+                document.getElementById("recommended")?.scrollIntoView({
+                  behavior: "smooth",
+                });
+              }}
+            >
+              Explore restaurants →
+            </button>
           </div>
 
-
-          <div className="hero-image-area">
-
-            <div className="hero-circle"></div>
-
+          <div className="promo-image">
             <img
-              src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=85"
-              alt="Delicious food"
+              src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800"
+              alt="Fresh delicious food"
             />
-
-            <div className="floating-card rating-card">
-
-              <div className="mini-icon">
-                ⭐
-              </div>
-
-              <div>
-                <strong>4.9/5</strong>
-                <span>Customer rating</span>
-              </div>
-
-            </div>
-
-            <div className="floating-card delivery-card">
-
-              <div className="mini-icon">
-                🚴
-              </div>
-
-              <div>
-                <strong>Fast delivery</strong>
-                <span>At your doorstep</span>
-              </div>
-
-            </div>
-
           </div>
 
+          <div className="promo-decoration">✦</div>
         </section>
-
 
         {/* CATEGORIES */}
-        <section className="section">
 
-          <div className="section-heading">
-
-            <div>
-              <span className="eyebrow">
-                EXPLORE
-              </span>
-
-              <h2>
-                What are you craving?
-              </h2>
-            </div>
-
-            <button
-              className="view-all"
-              onClick={handleViewAll}
-            >
-              View all →
-            </button>
-
-          </div>
-
-
-          <div className="category-list">
-
+        <section className="categories-section" id="categories">
+          <div className="category-carousel">
             {categories.map((category) => (
-
               <button
+                className={`category-item ${
+                  activeCategory === category.name ? "selected" : ""
+                }`}
                 key={category.name}
-                className={
-                  activeCategory === category.name
-                    ? "category active-category"
-                    : "category"
-                }
-                onClick={() =>
-                  handleCategoryClick(category.name)
-                }
+                onClick={() => handleCategoryClick(category.name)}
+                type="button"
+                aria-pressed={activeCategory === category.name}
               >
-
-                <span>
-                  {category.icon}
-                </span>
-
-                <strong>
-                  {category.name}
-                </strong>
-
+                <img src={category.image} alt="" loading="lazy" />
+                <span>{category.name}</span>
               </button>
-
             ))}
-
           </div>
-
         </section>
 
+        {/* FILTER CHIPS */}
 
-        {/* RESTAURANTS */}
-        <section
-          className="section"
-          id="restaurants"
-        >
+        <section className="filter-section">
+          <button
+            type="button"
+            className="filter-chip"
+            onClick={() => {
+              setVegMode(!vegMode);
+            }}
+          >
+            ♧ {vegMode ? "Veg only ✓" : "Filters"}
+          </button>
 
+          <button
+            type="button"
+            className={`filter-chip ${under250 ? "filter-active" : ""}`}
+            onClick={() => setUnder250(!under250)}
+          >
+            Under ₹250 {under250 ? "✓" : ""}
+          </button>
+
+          <button
+            type="button"
+            className={`filter-chip ${topRated ? "filter-active" : ""}`}
+            onClick={() => setTopRated(!topRated)}
+          >
+            ★ Top rated {topRated ? "✓" : ""}
+          </button>
+        </section>
+
+        {/* RECOMMENDED RESTAURANTS */}
+
+        <section className="recommended-section" id="recommended">
           <div className="section-heading">
-
             <div>
-              <span className="eyebrow">
-                {activeCategory === "All"
-                  ? "NEAR YOU"
-                  : activeCategory.toUpperCase()}
-              </span>
+              <span className="eyebrow">RECOMMENDED FOR YOU</span>
 
               <h2>
                 {activeCategory === "All"
-                  ? "Popular restaurants"
-                  : `${activeCategory} restaurants`}
+                  ? "Restaurants to explore"
+                  : activeCategory + " favourites"}
               </h2>
             </div>
 
-            <button
-              className="view-all"
-              onClick={handleViewAll}
-            >
-              See all →
-            </button>
-
+            <span className="result-count">
+              {filteredRestaurants.length} places
+            </span>
           </div>
 
-
-          {fetchError && (
-            <div className="no-results">
-              <span>⚠️</span>
-              <h3>Server connection problem</h3>
-              <p>{fetchError}</p>
-            </div>
-          )}
-
           {loading ? (
-            <div className="no-results">
-              <span>🍽️</span>
-              <h3>Loading restaurants...</h3>
-              <p>Getting fresh data from ASUNAM FOOD.</p>
-            </div>
-          ) : (
-            <div className="restaurant-grid">
-
-            {filteredRestaurants.map(
-              (restaurant) => (
-
-              <article
-                className="restaurant-card"
-                key={restaurant.id}
-                onClick={() => {
-                  window.location.href = `/restaurants/${restaurant.id}`;
-                }}
-                style={{ cursor: "pointer" }}
-              >
-
+            <div className="loading-message">Finding delicious places...</div>
+          ) : fetchError ? (
+            <div className="loading-message">{fetchError}</div>
+          ) : filteredRestaurants.length > 0 ? (
+            <div className="restaurant-strip">
+              {filteredRestaurants.map((restaurant) => (
+                <article
+                  className="restaurant-card"
+                  key={restaurant.id}
+                  onClick={() => {
+                    window.location.href =
+                      `/restaurants/${restaurant.id}`;
+                  }}
+                  role="link"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      window.location.href =
+                        `/restaurants/${restaurant.id}`;
+                    }
+                  }}
+                >
                   <div className="restaurant-image">
-
                     <img
                       src={restaurant.image}
                       alt={restaurant.name}
+                      loading="lazy"
                     />
 
-                    <span className="discount">
-                      20% OFF
+                    <span className={`restaurant-status ${
+                      restaurant.isOpen ? "open" : "closed"
+                    }`}>
+                      {restaurant.isOpen ? "OPEN" : "CLOSED"}
                     </span>
-
-                    <button className="heart">
-                      ♡
-                    </button>
-
                   </div>
 
-
                   <div className="restaurant-info">
-
-                    <div className="restaurant-title">
-
-                      <h3>
-                        {restaurant.name}
-                      </h3>
+                    <div className="restaurant-name-row">
+                      <h3>{restaurant.name}</h3>
 
                       <span className="rating">
-                        ★ {restaurant.rating}
+                        {restaurant.rating > 0
+                          ? `★ ${restaurant.rating.toFixed(1)}`
+                          : "NEW"}
                       </span>
-
                     </div>
 
-                    <p>
-                      {restaurant.cuisine}
-                    </p>
+                    <p>{restaurant.cuisine}</p>
 
                     <div className="restaurant-meta">
-
                       <span>
-                        🛵 {restaurant.time}
+                        {restaurant.minimumOrderAmount > 0
+                          ? `Minimum ₹${restaurant.minimumOrderAmount}`
+                          : "Order your favourites"}
                       </span>
-
-                      <span>
-                        {restaurant.price}
-                      </span>
-
                     </div>
 
                     <button
-                      className="menu-btn"
+                      type="button"
+                      className="restaurant-menu-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.location.href = `/restaurants/${restaurant.id}`;
+
+                        window.location.href =
+                          `/restaurants/${restaurant.id}`;
                       }}
                     >
-                      View Menu →
+                      View menu →
                     </button>
-
                   </div>
-
                 </article>
-
-              )
-            )}
-
-
-            {filteredRestaurants.length === 0 && (
-
-              <div className="no-results">
-
-                <span>
-                  😕
-                </span>
-
-                <h3>
-                  No restaurants found
-                </h3>
-
-                <p>
-                  Try another category or search.
-                </p>
-
-              </div>
-
-            )}
-
-            </div>
-          )}
-
-        </section>
-
-
-        {/* POPULAR FOOD */}
-        <section
-          className="popular-section"
-          id="popular"
-        >
-
-          <div className="section-heading">
-
-            <div>
-              <span className="eyebrow">
-                CUSTOMER FAVOURITES
-              </span>
-
-              <h2>
-                Popular right now
-              </h2>
-            </div>
-
-            <button
-              className="view-all"
-              onClick={handleViewAll}
-            >
-              View all →
-            </button>
-
-          </div>
-
-
-          {loading ? (
-            <div className="no-results">
-              <span>🍗</span>
-              <h3>Loading food...</h3>
-              <p>Getting fresh food from ASUNAM FOOD.</p>
+              ))}
             </div>
           ) : (
-            <div className="food-grid">
-
-            {filteredFoods.map((food) => (
-
-              <article
-                className="food-card"
-                key={food.name}
-              >
-
-                <div className="food-image">
-
-                  <img
-                    src={food.image}
-                    alt={food.name}
-                  />
-
-                  <button
-                    className="add-btn"
-                    onClick={() =>
-                      handleAddToCart(food)
-                    }
-                  >
-                    +
-                  </button>
-
-                </div>
-
-
-                <div className="food-info">
-
-                  <span>
-                    {food.restaurant}
-                  </span>
-
-                  <h3>
-                    {food.name}
-                  </h3>
-
-                  <div className="food-bottom">
-
-                    <strong>
-                      ₹{food.price}
-                    </strong>
-
-                    <small>
-                      ★ {food.rating || "0.0"}
-                    </small>
-
-                  </div>
-
-                </div>
-
-              </article>
-
-            ))}
-
-
-            {filteredFoods.length === 0 && (
-
-              <div className="no-results">
-
-                <span>
-                  🍽️
-                </span>
-
-                <h3>
-                  No food found
-                </h3>
-
-                <p>
-                  Try another category.
-                </p>
-
-              </div>
-
-            )}
-
+            <div className="loading-message">
+              No restaurants found. Try another category.
             </div>
           )}
-
         </section>
 
+        {/* POPULAR FOOD */}
 
-        {/* OFFER */}
-        <section
-          className="offer-section"
-          id="offers"
-        >
+        <section className="popular-section" id="popular">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">MADE FOR YOUR CRAVINGS</span>
+              <h2>Popular food</h2>
+            </div>
 
-          <div className="offer-content">
-
-            <span className="offer-label">
-              ASUNAM SPECIAL
+            <span className="result-count">
+              {filteredFoods.length} items
             </span>
+          </div>
 
-            <h2>
-              Get <span>20% OFF</span>
-              <br />
-              on your first order
-            </h2>
+          {loading ? (
+            <div className="loading-message">
+              Loading popular food...
+            </div>
+          ) : filteredFoods.length > 0 ? (
+            <div className="food-grid">
+              {filteredFoods.map((food) => (
+                <article className="food-card" key={food.id}>
+                  <div
+                    className="food-image"
+                    onClick={() => {
+                      window.location.href = `/foods/${food.id}`;
+                    }}
+                    role="link"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        window.location.href = `/foods/${food.id}`;
+                      }
+                    }}
+                  >
+                    <img
+                      src={food.image}
+                      alt={food.name}
+                      loading="lazy"
+                    />
+
+                    <span className={food.isVeg ? "veg-label" : "nonveg-label"}>
+                      {food.isVeg ? "● VEG" : "● NON VEG"}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="add-btn"
+                      disabled={!food.isAvailable}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToCart(food);
+                      }}
+                    >
+                      {food.isAvailable ? "+" : "−"}
+                    </button>
+                  </div>
+
+                  <div className="food-info">
+                    <small>{food.restaurant}</small>
+
+                    <h3>{food.name}</h3>
+
+                    <div className="food-bottom">
+                      <strong>₹{food.price}</strong>
+
+                      <span>
+                        {food.rating > 0
+                          ? `★ ${food.rating.toFixed(1)}`
+                          : "New"}
+                      </span>
+                    </div>
+
+                    {!food.isAvailable && (
+                      <small className="unavailable">
+                        Currently unavailable
+                      </small>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="loading-message">
+              No food items match these filters.
+            </div>
+          )}
+        </section>
+
+        {/* BRAND PROMOTION */}
+
+        <section className="brand-promo">
+          <div>
+            <span>ASUNAM FOOD</span>
+            <h2>Every craving has a story.</h2>
 
             <p>
-              Use the code below during checkout
-              and enjoy your first meal with
-              ASUNAM FOOD.
+              Find your favourites, explore new tastes and enjoy every bite.
             </p>
 
-            <div className="coupon">
-
-              <strong>
-                ASUNAM20
-              </strong>
-
-              <button
-                onClick={() =>
-                  navigator.clipboard?.writeText(
-                    "ASUNAM20"
-                  )
-                }
-              >
-                Copy code
-              </button>
-
-            </div>
-
+            <button
+              type="button"
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            >
+              Explore now ↑
+            </button>
           </div>
 
-          <div className="offer-emoji">
-            🍔
-          </div>
-
+          <div className="brand-promo-icon">🍽️</div>
         </section>
-
       </main>
 
-
       {/* FOOTER */}
-      <footer>
 
+      <footer className="home-footer">
         <div className="footer-brand">
-
           <div className="logo">
-
-            <div className="logo-mark">
-              A
-            </div>
+            <div className="logo-mark">A</div>
 
             <div>
               <h2>ASUNAM</h2>
               <span>FOOD</span>
             </div>
-
           </div>
 
-          <p>
-            Good food. Good mood.
-            Delivered with love.
-          </p>
-
+          <p>Good food. Good mood. Delivered with love.</p>
         </div>
 
-
         <div className="footer-links">
-
           <div>
             <h4>Company</h4>
             <a href="#home">About us</a>
-            <a href="#restaurants">
-              Restaurants
-            </a>
-            <a href="#offers">
-              Offers
-            </a>
+            <a href="#recommended">Restaurants</a>
+            <a href="#popular">Popular food</a>
           </div>
 
           <div>
@@ -831,26 +863,19 @@ function App() {
           </div>
 
           <div>
-            <h4>For partners</h4>
-            <a href="#home">
-              Add restaurant
-            </a>
-            <a href="#home">
-              Become a delivery partner
-            </a>
+            <h4>Partners</h4>
+            <a href="/restaurant/onboarding">Add restaurant</a>
+            <a href="#home">Delivery partners</a>
           </div>
-
         </div>
-
       </footer>
-
 
       <div className="copyright">
         © 2026 ASUNAM FOOD. All rights reserved.
       </div>
 
+      {/* CART DRAWER */}
 
-      {/* CART */}
       {showCart && (
         <div
           className="cart-overlay"
@@ -866,7 +891,11 @@ function App() {
                 <h2>Shopping Cart</h2>
               </div>
 
-              <button onClick={() => setShowCart(false)}>
+              <button
+                type="button"
+                onClick={() => setShowCart(false)}
+                aria-label="Close cart"
+              >
                 ✕
               </button>
             </div>
@@ -874,31 +903,21 @@ function App() {
             {!cart?.items?.length ? (
               <div className="empty-cart">
                 <span>🛒</span>
-
                 <h3>Your cart is empty</h3>
-
-                <p>
-                  Add something delicious
-                  to get started.
-                </p>
+                <p>Add something delicious to get started.</p>
               </div>
             ) : (
               <>
                 <div className="cart-items">
                   {cart.items.map((item) => (
-                    <div
-                      className="cart-item"
-                      key={item._id}
-                    >
+                    <div className="cart-item" key={item._id}>
                       <img
                         src={item.food?.image}
                         alt={item.food?.name || "Food"}
                       />
 
-                      <div>
-                        <h4>
-                          {item.food?.name || "Food item"}
-                        </h4>
+                      <div className="cart-item-details">
+                        <h4>{item.food?.name || "Food item"}</h4>
 
                         <span>
                           {item.restaurant?.name ||
@@ -910,15 +929,9 @@ function App() {
                           ₹{item.price} × {item.quantity}
                         </strong>
 
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            marginTop: "8px",
-                          }}
-                        >
+                        <div className="cart-quantity-controls">
                           <button
+                            type="button"
                             onClick={() =>
                               updateItem(
                                 item.food?._id,
@@ -933,6 +946,7 @@ function App() {
                           <span>{item.quantity}</span>
 
                           <button
+                            type="button"
                             onClick={() =>
                               updateItem(
                                 item.food?._id,
@@ -945,6 +959,8 @@ function App() {
                           </button>
 
                           <button
+                            type="button"
+                            className="remove-cart-item"
                             onClick={() =>
                               removeItem(item.food?._id)
                             }
@@ -960,13 +976,11 @@ function App() {
 
                 <div className="cart-total">
                   <span>Total</span>
-
-                  <strong>
-                    ₹{cart.totalAmount || 0}
-                  </strong>
+                  <strong>₹{cart.totalAmount || 0}</strong>
                 </div>
 
                 <button
+                  type="button"
                   className="checkout-btn"
                   onClick={() => {
                     setShowCart(false);
@@ -977,7 +991,8 @@ function App() {
                 </button>
 
                 <button
-                  className="checkout-btn"
+                  type="button"
+                  className="clear-cart-btn"
                   onClick={async () => {
                     try {
                       await clearAll();
@@ -985,7 +1000,6 @@ function App() {
                       alert(error.message);
                     }
                   }}
-                  style={{ marginTop: "10px" }}
                 >
                   Clear Cart
                 </button>
@@ -994,6 +1008,38 @@ function App() {
           </aside>
         </div>
       )}
+
+      {/* MOBILE BOTTOM NAVIGATION */}
+
+      <nav className="mobile-bottom-nav">
+        <a className="mobile-nav-active" href="#home">
+          <span>⌂</span>
+          <small>Home</small>
+        </a>
+
+        <button type="button" onClick={focusSearch}>
+          <span>⌕</span>
+          <small>Search</small>
+        </button>
+
+        <a href="/orders">
+          <span>▤</span>
+          <small>Orders</small>
+        </a>
+
+        <button
+          type="button"
+          onClick={() => setShowCart(true)}
+        >
+          <span>🛒</span>
+          <small>Cart {itemCount > 0 ? `(${itemCount})` : ""}</small>
+        </button>
+
+        <a href="/profile">
+          <span>♙</span>
+          <small>Profile</small>
+        </a>
+      </nav>
     </div>
   );
 }

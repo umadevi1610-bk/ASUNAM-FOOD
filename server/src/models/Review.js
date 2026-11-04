@@ -56,6 +56,19 @@ const reviewSchema = new mongoose.Schema(
   }
 );
 
+// Prevent duplicate reviews for the same order and food.
+// A null food value represents the restaurant review.
+reviewSchema.index(
+  {
+    customer: 1,
+    order: 1,
+    food: 1,
+  },
+  {
+    unique: true,
+  }
+);
+
 const Review = mongoose.model("Review", reviewSchema);
 
 module.exports = Review;

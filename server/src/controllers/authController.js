@@ -1,40 +1,50 @@
+
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 
 // ======================================
 // GENERATE JWT TOKEN
 // ======================================
-const generateToken = (userId) => {
+
+const generateToken = (userId, role) => {
   return jwt.sign(
-    { userId },
+    {
+      userId: String(userId),
+      role,
+    },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
 };
 
 // ======================================
-// REGISTER USER
+// FORMAT USER RESPONSE
 // ======================================
-const registerUser = async (req, res) => {
-  try {
-    const {
-      name,
-      email,
-      phone,
-      password,
-      role,
-      address,
-      profileImage,
-    } = req.body;
 
-    // -----------------------------------
-    // Required fields
-    // -----------------------------------
-    if (!name || !email || !password || !phone) {
+const formatUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email || "",
+  phone: user.phone || "",
+  role: user.role,
+  address: user.address,
+  profileImage: user.profileImage || "",
+});
+
+// ======================================
+// SHARED REGISTRATION LOGIC
+// Role is determined by the server, not the request.
+// ======================================
+
+const registerAccount = async (req, res, assignedRole) => {
+  try {
+    const { name, email, phone, password, address, profileImage } =
+      req.body;
+
+    if (!name || !email || !phone || !password) {
       return res.status(400).json({
         success: false,
-        message:
-          "Name, email, phone and password are required",
+        message: "Name, email, phone and password are required",
       });
     }
 
@@ -42,9 +52,20 @@ const registerUser = async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone.trim();
 
-    // -----------------------------------
-    // Basic phone validation
-    // -----------------------------------
+    if (cleanName.length < 2 || cleanName.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must contain 2 to 50 characters",
+      });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
     if (!/^[0-9]{10}$/.test(cleanPhone)) {
       return res.status(400).json({
         success: false,
@@ -52,87 +73,117 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // -----------------------------------
-    // Check existing email
-    // -----------------------------------
-    const existingEmailUser = await User.findOne({
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    const existingEmail = await User.findOne({
       email: cleanEmail,
     });
 
-    if (existingEmailUser) {
+    if (existingEmail) {
       return res.status(409).json({
         success: false,
-        message: "User with this email already exists",
+        message: "An account with this email already exists",
       });
     }
 
-    // -----------------------------------
-    // Check existing phone
-    // -----------------------------------
-    const existingPhoneUser = await User.findOne({
+    const existingPhone = await User.findOne({
       phone: cleanPhone,
     });
 
-    if (existingPhoneUser) {
+    if (existingPhone) {
       return res.status(409).json({
         success: false,
-        message: "User with this phone number already exists",
+        message: "An account with this phone number already exists",
       });
     }
 
-    // -----------------------------------
-    // Create user
-    // -----------------------------------
     const user = await User.create({
       name: cleanName,
       email: cleanEmail,
       phone: cleanPhone,
       password,
-      role: role || "customer",
+      role: assignedRole,
       address,
       profileImage,
     });
 
-    // -----------------------------------
-    // Generate token
-    // -----------------------------------
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.role);
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Registration successful",
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email || "",
-        phone: user.phone,
-        role: user.role,
-        address: user.address,
-        profileImage: user.profileImage || "",
-      },
+      user: formatUser(user),
     });
   } catch (error) {
-    console.error("Register error:", error.message);
+    console.error("Registration error:", error.message);
 
-    res.status(500).json({
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Email or phone number is already registered",
+      });
+    }
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
       success: false,
       message: "Registration failed",
-      error: error.message,
     });
   }
 };
 
 // ======================================
-// EMAIL + PASSWORD LOGIN
+// CUSTOMER REGISTRATION
+// POST /api/auth/register
 // ======================================
-const loginUser = async (req, res) => {
+
+const registerUser = async (req, res) => {
+  return registerAccount(req, res, "customer");
+};
+
+// ======================================
+// RESTAURANT PARTNER REGISTRATION
+// POST /api/auth/restaurant-register
+// ======================================
+
+const registerRestaurantUser = async (req, res) => {
+  return registerAccount(req, res, "restaurant");
+};
+
+// ======================================
+// DELIVERY PARTNER REGISTRATION
+// POST /api/auth/delivery-register
+// ======================================
+
+const registerDeliveryUser = async (req, res) => {
+  return registerAccount(req, res, "delivery");
+};
+
+// ======================================
+// SHARED EMAIL + PASSWORD LOGIN
+// ======================================
+
+const loginWithEmailPassword = async (
+  req,
+  res,
+  requiredRole = null,
+  accountLabel = "Account"
+) => {
   try {
     const { email, password } = req.body;
 
-    // -----------------------------------
-    // Required fields
-    // -----------------------------------
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -142,71 +193,81 @@ const loginUser = async (req, res) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // -----------------------------------
-    // Find user + password
-    // -----------------------------------
     const user = await User.findOne({
       email: cleanEmail,
     }).select("+password");
 
-    if (!user) {
+    if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
       });
     }
 
-    // -----------------------------------
-    // Account status
-    // -----------------------------------
+    if (requiredRole && user.role !== requiredRole) {
+      return res.status(403).json({
+        success: false,
+        message: `This account is not a ${accountLabel} account`,
+      });
+    }
+
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message: "Your account is inactive",
+        message: `${accountLabel} account is inactive`,
       });
     }
 
-    // -----------------------------------
-    // Password check
-    // -----------------------------------
-    const isPasswordCorrect =
-      await user.comparePassword(password);
+    const token = generateToken(user._id, user.role);
 
-    if (!isPasswordCorrect) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
-
-    // -----------------------------------
-    // Generate token
-    // -----------------------------------
-    const token = generateToken(user._id);
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Login successful",
+      message: `${accountLabel} login successful`,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email || "",
-        phone: user.phone,
-        role: user.role,
-        address: user.address,
-        profileImage: user.profileImage || "",
-      },
+      user: formatUser(user),
     });
   } catch (error) {
-    console.error("Login error:", error.message);
+    console.error(`${accountLabel} login error:`, error.message);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Login failed",
-      error: error.message,
     });
   }
+};
+
+// ======================================
+// NORMAL EMAIL + PASSWORD LOGIN
+// ======================================
+
+const loginUser = async (req, res) => {
+  return loginWithEmailPassword(req, res);
+};
+
+// ======================================
+// RESTAURANT LOGIN
+// ======================================
+
+const restaurantLogin = async (req, res) => {
+  return loginWithEmailPassword(
+    req,
+    res,
+    "restaurant",
+    "Restaurant"
+  );
+};
+
+// ======================================
+// DELIVERY PARTNER LOGIN
+// ======================================
+
+const deliveryLogin = async (req, res) => {
+  return loginWithEmailPassword(
+    req,
+    res,
+    "delivery",
+    "Delivery partner"
+  );
 };
 
 // ======================================
@@ -214,13 +275,11 @@ const loginUser = async (req, res) => {
 // NAME + PHONE
 // OTP WILL BE ADDED LATER
 // ======================================
+
 const customerLogin = async (req, res) => {
   try {
     const { name, phone } = req.body;
 
-    // -----------------------------------
-    // Required fields
-    // -----------------------------------
     if (!name || !phone) {
       return res.status(400).json({
         success: false,
@@ -231,19 +290,13 @@ const customerLogin = async (req, res) => {
     const cleanName = name.trim();
     const cleanPhone = phone.trim();
 
-    // -----------------------------------
-    // Validate name
-    // -----------------------------------
-    if (cleanName.length < 2) {
+    if (cleanName.length < 2 || cleanName.length > 50) {
       return res.status(400).json({
         success: false,
-        message: "Name must be at least 2 characters",
+        message: "Name must contain 2 to 50 characters",
       });
     }
 
-    // -----------------------------------
-    // Validate phone
-    // -----------------------------------
     if (!/^[0-9]{10}$/.test(cleanPhone)) {
       return res.status(400).json({
         success: false,
@@ -251,44 +304,28 @@ const customerLogin = async (req, res) => {
       });
     }
 
-    // -----------------------------------
-    // Find existing user by phone
-    // -----------------------------------
     let user = await User.findOne({
       phone: cleanPhone,
     });
 
-    // -----------------------------------
-    // Check role
-    // -----------------------------------
     if (user && user.role !== "customer") {
       return res.status(403).json({
         success: false,
-        message:
-          "This phone number belongs to a partner account",
+        message: "This phone number belongs to a partner account",
       });
     }
 
-    // -----------------------------------
-    // Create new customer
-    // -----------------------------------
     if (!user) {
       user = await User.create({
         name: cleanName,
         phone: cleanPhone,
         role: "customer",
       });
-    } else {
-      // Update name if customer enters a new name
-      if (cleanName !== user.name) {
-        user.name = cleanName;
-        await user.save();
-      }
+    } else if (cleanName !== user.name) {
+      user.name = cleanName;
+      await user.save();
     }
 
-    // -----------------------------------
-    // Account status
-    // -----------------------------------
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
@@ -296,47 +333,31 @@ const customerLogin = async (req, res) => {
       });
     }
 
-    // -----------------------------------
-    // Generate JWT
-    // -----------------------------------
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.role);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Customer login successful",
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email || "",
-        phone: user.phone,
-        role: user.role,
-        address: user.address,
-        profileImage: user.profileImage || "",
-      },
+      user: formatUser(user),
     });
   } catch (error) {
-    console.error(
-      "Customer login error:",
-      error.message
-    );
+    console.error("Customer login error:", error.message);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Customer login failed",
-      error: error.message,
     });
   }
 };
 
 // ======================================
-// GET CURRENT USER
+// GET CURRENT LOGGED-IN USER
 // ======================================
+
 const getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(
-      req.user.userId
-    );
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({
@@ -345,28 +366,23 @@ const getCurrentUser = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "This account is inactive",
+      });
+    }
+
+    return res.status(200).json({
       success: true,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email || "",
-        phone: user.phone || "",
-        role: user.role,
-        address: user.address,
-        profileImage: user.profileImage || "",
-      },
+      user: formatUser(user),
     });
   } catch (error) {
-    console.error(
-      "Get current user error:",
-      error.message
-    );
+    console.error("Get current user error:", error.message);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to get user",
-      error: error.message,
     });
   }
 };
@@ -374,9 +390,14 @@ const getCurrentUser = async (req, res) => {
 // ======================================
 // EXPORTS
 // ======================================
+
 module.exports = {
   registerUser,
+  registerRestaurantUser,
+  registerDeliveryUser,
   loginUser,
   customerLogin,
+  restaurantLogin,
+  deliveryLogin,
   getCurrentUser,
 };

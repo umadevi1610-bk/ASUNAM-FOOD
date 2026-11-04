@@ -442,10 +442,11 @@ const RestaurantDetails = ({ restaurantId }) => {
   );
 };
 
+
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#f7f7f7",
+    background: "#F0FDF4",
     padding: "28px 20px 50px",
     boxSizing: "border-box",
   },
@@ -459,7 +460,7 @@ const styles = {
   backButton: {
     border: "none",
     background: "transparent",
-    color: "#666",
+    color: "#166534",
     padding: "0",
     marginBottom: "18px",
     cursor: "pointer",
@@ -472,7 +473,7 @@ const styles = {
     height: "360px",
     borderRadius: "24px",
     overflow: "hidden",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.10)",
+    boxShadow: "0 10px 30px rgba(22, 101, 52, 0.12)",
   },
 
   heroImage: {
@@ -494,15 +495,15 @@ const styles = {
     left: "28px",
     right: "28px",
     bottom: "25px",
-    color: "#fff",
+    color: "#FFFFFF",
   },
 
   openBadge: {
     display: "inline-block",
     padding: "6px 10px",
     borderRadius: "999px",
-    background: "rgba(255,255,255,0.92)",
-    color: "#e85d04",
+    background: "#DCFCE7",
+    color: "#166534",
     fontSize: "10px",
     fontWeight: "800",
     letterSpacing: "1px",
@@ -530,16 +531,17 @@ const styles = {
   },
 
   infoCard: {
-    background: "#fff",
+    background: "#FFFFFF",
     marginTop: "20px",
     padding: "23px",
+    border: "1px solid #D1FAE5",
     borderRadius: "18px",
-    boxShadow: "0 6px 20px rgba(0,0,0,0.05)",
+    boxShadow: "0 6px 20px rgba(22, 101, 52, 0.05)",
   },
 
   infoLabel: {
     display: "block",
-    color: "#ff5a36",
+    color: "#166534",
     fontWeight: "800",
     letterSpacing: "1.5px",
     fontSize: "10px",
@@ -547,15 +549,14 @@ const styles = {
 
   description: {
     margin: "7px 0 20px",
-    color: "#666",
+    color: "#475569",
     lineHeight: 1.6,
     maxWidth: "750px",
   },
 
   infoGrid: {
     display: "grid",
-    gridTemplateColumns:
-      "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     gap: "15px",
   },
 
@@ -563,7 +564,8 @@ const styles = {
     display: "flex",
     gap: "10px",
     alignItems: "flex-start",
-    background: "#fafafa",
+    background: "#F0FDF4",
+    border: "1px solid #D1FAE5",
     borderRadius: "12px",
     padding: "14px",
   },
@@ -575,7 +577,7 @@ const styles = {
   infoItemSmall: {
     display: "block",
     fontSize: "11px",
-    color: "#999",
+    color: "#64748B",
     marginBottom: "4px",
   },
 
@@ -588,18 +590,18 @@ const styles = {
     fontSize: "10px",
     fontWeight: "800",
     letterSpacing: "1.8px",
-    color: "#ff5a36",
+    color: "#166534",
   },
 
   menuTitle: {
     margin: "5px 0 4px",
     fontSize: "28px",
-    color: "#222",
+    color: "#14532D",
   },
 
   menuSubtitle: {
     margin: 0,
-    color: "#888",
+    color: "#64748B",
     fontSize: "13px",
   },
 
@@ -612,9 +614,9 @@ const styles = {
   },
 
   categoryButton: {
-    border: "1px solid #ddd",
-    background: "#fff",
-    color: "#555",
+    border: "1px solid #D1FAE5",
+    background: "#FFFFFF",
+    color: "#166534",
     padding: "9px 15px",
     borderRadius: "999px",
     cursor: "pointer",
@@ -623,29 +625,29 @@ const styles = {
   },
 
   categoryButtonActive: {
-    background: "#ff5a36",
-    borderColor: "#ff5a36",
-    color: "#fff",
+    background: "#166534",
+    borderColor: "#166534",
+    color: "#FFFFFF",
   },
 
   foodGrid: {
     display: "grid",
-    gridTemplateColumns:
-      "repeat(2, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: "18px",
   },
 
   foodCard: {
-    background: "#fff",
+    background: "#FFFFFF",
+    border: "1px solid #D1FAE5",
     borderRadius: "18px",
     overflow: "hidden",
-    boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
+    boxShadow: "0 6px 20px rgba(22, 101, 52, 0.06)",
   },
 
   foodImageWrap: {
     position: "relative",
     height: "210px",
-    background: "#f3f3f3",
+    background: "#F0FDF4",
   },
 
   foodImage: {
@@ -662,7 +664,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     background: "rgba(0,0,0,0.55)",
-    color: "#fff",
+    color: "#FFFFFF",
     fontWeight: "700",
   },
 
@@ -670,9 +672,10 @@ const styles = {
     position: "absolute",
     top: "12px",
     left: "12px",
-    background: "#fff",
-    color: "#21843a",
+    background: "#FFFFFF",
+    color: "#166534",
     padding: "5px 8px",
+    border: "1px solid #BBF7D0",
     borderRadius: "7px",
     fontSize: "9px",
     fontWeight: "800",
@@ -686,19 +689,19 @@ const styles = {
     fontSize: "10px",
     textTransform: "uppercase",
     letterSpacing: "1px",
-    color: "#999",
+    color: "#166534",
     fontWeight: "700",
   },
 
   foodName: {
     margin: "5px 0",
-    color: "#222",
+    color: "#14532D",
     fontSize: "19px",
   },
 
   foodDescription: {
     margin: 0,
-    color: "#777",
+    color: "#64748B",
     fontSize: "13px",
     lineHeight: 1.5,
     minHeight: "39px",
@@ -714,21 +717,21 @@ const styles = {
 
   foodPrice: {
     display: "block",
-    color: "#222",
+    color: "#14532D",
     fontSize: "18px",
   },
 
   prepTime: {
     display: "block",
-    color: "#999",
+    color: "#64748B",
     fontSize: "11px",
     marginTop: "3px",
   },
 
   addButton: {
     border: "none",
-    background: "#ff5a36",
-    color: "#fff",
+    background: "#166534",
+    color: "#FFFFFF",
     padding: "10px 15px",
     borderRadius: "10px",
     cursor: "pointer",
@@ -737,11 +740,12 @@ const styles = {
   },
 
   emptyMenu: {
-    background: "#fff",
+    background: "#FFFFFF",
+    border: "1px solid #D1FAE5",
     borderRadius: "18px",
     padding: "50px 20px",
     textAlign: "center",
-    boxShadow: "0 6px 20px rgba(0,0,0,0.05)",
+    boxShadow: "0 6px 20px rgba(22, 101, 52, 0.05)",
   },
 
   centerPage: {
@@ -750,16 +754,19 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     padding: "20px",
+    background: "#F0FDF4",
   },
 
   messageCard: {
     width: "100%",
     maxWidth: "430px",
-    background: "#fff",
+    boxSizing: "border-box",
+    background: "#FFFFFF",
+    border: "1px solid #D1FAE5",
     padding: "45px 25px",
     borderRadius: "18px",
     textAlign: "center",
-    boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
+    boxShadow: "0 6px 20px rgba(22, 101, 52, 0.06)",
   },
 
   bigIcon: {
@@ -768,14 +775,14 @@ const styles = {
   },
 
   messageText: {
-    color: "#777",
+    color: "#475569",
     lineHeight: 1.6,
   },
 
   primaryButton: {
     border: "none",
-    background: "#ff5a36",
-    color: "#fff",
+    background: "#166534",
+    color: "#FFFFFF",
     padding: "12px 20px",
     borderRadius: "10px",
     cursor: "pointer",
@@ -783,5 +790,6 @@ const styles = {
     marginTop: "10px",
   },
 };
+
 
 export default RestaurantDetails;

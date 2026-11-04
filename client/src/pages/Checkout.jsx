@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { createOrder } from "../services/orderService";
@@ -6,6 +7,19 @@ import { createOrder } from "../services/orderService";
 const Checkout = () => {
   const { user, token, isAuthenticated } = useAuth();
   const { cart } = useCart();
+
+  const customerId = user?._id || user?.id || user?.userId;
+
+  // ======================================
+  // SAVED ADDRESS
+  // ======================================
+
+  const [savedAddress, setSavedAddress] = useState(null);
+  const [isEditingAddress, setIsEditingAddress] = useState(true);
+
+  // ======================================
+  // FORM DATA
+  // ======================================
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -21,24 +35,84 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // -------------------------------
-  // Handle input changes
-  // -------------------------------
+  // ======================================
+  // LOAD SAVED ADDRESS
+  // ======================================
+
+  useEffect(() => {
+    if (!customerId) return;
+
+    try {
+      const storageKey = `asunam_saved_address_${customerId}`;
+      const storedAddress = localStorage.getItem(storageKey);
+
+      if (storedAddress) {
+        const address = JSON.parse(storedAddress);
+
+        setSavedAddress(address);
+
+        setFormData((previous) => ({
+          ...previous,
+          ...address,
+          customerNote: "",
+        }));
+
+        setIsEditingAddress(false);
+      } else {
+        setFormData((previous) => ({
+          ...previous,
+          name: previous.name || user?.name || "",
+          phone: previous.phone || user?.phone || "",
+        }));
+      }
+    } catch (storageError) {
+      console.error("Saved address loading error:", storageError);
+    }
+  }, [customerId]);
+
+  // ======================================
+  // HANDLE INPUT
+  // ======================================
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
+    setFormData((previous) => ({
+      ...previous,
       [name]: value,
     }));
+
+    setError("");
   };
 
-  // -------------------------------
-  // Place order
-  // -------------------------------
+  // ======================================
+  // CHANGE SAVED ADDRESS
+  // ======================================
+
+  const handleEditAddress = () => {
+    setIsEditingAddress(true);
+    setError("");
+  };
+
+  const handleCancelAddressEdit = () => {
+    if (!savedAddress) return;
+
+    setFormData((previous) => ({
+      ...previous,
+      ...savedAddress,
+      customerNote: previous.customerNote,
+    }));
+
+    setIsEditingAddress(false);
+    setError("");
+  };
+
+  // ======================================
+  // PLACE ORDER
+  // ======================================
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
-
     setError("");
 
     if (!isAuthenticated || !token) {
@@ -52,40 +126,66 @@ const Checkout = () => {
     }
 
     if (
-      !formData.name ||
-      !formData.phone ||
-      !formData.street ||
-      !formData.city ||
-      !formData.state ||
-      !formData.pincode
+      !formData.name.trim() ||
+      !formData.phone.trim() ||
+      !formData.street.trim() ||
+      !formData.city.trim() ||
+      !formData.state.trim() ||
+      !formData.pincode.trim()
     ) {
-      setError("Please fill all delivery address fields.");
+      setError("Please complete your delivery address.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(formData.pincode.trim())) {
+      setError("Please enter a valid 6-digit pincode.");
       return;
     }
 
     try {
       setLoading(true);
 
+      const addressToSave = {
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        street: formData.street.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        pincode: formData.pincode.trim(),
+      };
+
       const orderData = {
         deliveryAddress: {
-          name: formData.name,
-          phone: formData.phone,
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
+          ...addressToSave,
           latitude: null,
           longitude: null,
         },
 
         paymentMethod,
 
-        customerNote: formData.customerNote,
+        customerNote: formData.customerNote.trim(),
       };
 
       const response = await createOrder(orderData, token);
 
       if (response.success && response.order) {
+        // Remember address separately for this customer
+        if (customerId) {
+          try {
+            localStorage.setItem(
+              `asunam_saved_address_${customerId}`,
+              JSON.stringify(addressToSave)
+            );
+
+            setSavedAddress(addressToSave);
+          } catch (storageError) {
+            console.error(
+              "Could not save delivery address:",
+              storageError
+            );
+          }
+        }
+
         window.location.href = `/orders/${response.order._id}`;
       } else {
         setError(response.message || "Failed to place order.");
@@ -98,20 +198,17 @@ const Checkout = () => {
     }
   };
 
-  // -------------------------------
-  // Not logged in
-  // -------------------------------
+  // ======================================
+  // NOT LOGGED IN
+  // ======================================
+
   if (!isAuthenticated) {
     return (
       <div style={styles.centerPage}>
         <div style={styles.messageBox}>
-          <div style={styles.icon}>🔐</div>
-
+          <div style={styles.messageIcon}>🔐</div>
           <h2>Please login first</h2>
-
-          <p>
-            You need to login before continuing to checkout.
-          </p>
+          <p>You need to login before continuing to checkout.</p>
 
           <button
             style={styles.primaryButton}
@@ -126,18 +223,17 @@ const Checkout = () => {
     );
   }
 
-  // -------------------------------
-  // Empty cart
-  // -------------------------------
+  // ======================================
+  // EMPTY CART
+  // ======================================
+
   if (!cart?.items?.length) {
     return (
       <div style={styles.centerPage}>
         <div style={styles.messageBox}>
-          <div style={styles.icon}>🛒</div>
-
+          <div style={styles.messageIcon}>🛒</div>
           <h2>Your cart is empty</h2>
-
-          <p>Add some delicious food before checkout.</p>
+          <p>Add something delicious before checkout.</p>
 
           <button
             style={styles.primaryButton}
@@ -152,32 +248,156 @@ const Checkout = () => {
     );
   }
 
+  // ======================================
+  // MAIN CHECKOUT
+  // ======================================
+
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
+
+      <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        .checkout-field {
+          width: 100%;
+          border: 1px solid #e0e7df;
+          background: #fbfdfb;
+          border-radius: 10px;
+          padding: 13px 14px;
+          font-size: 14px;
+          color: #203d2c;
+          outline: none;
+          transition: border-color .2s, box-shadow .2s;
+          font-family: inherit;
+        }
+
+        .checkout-field:focus {
+          border-color: #23734b;
+          box-shadow: 0 0 0 3px rgba(35, 115, 75, .09);
+          background: #fff;
+        }
+
+        .checkout-field::placeholder {
+          color: #a0aaa2;
+        }
+
+        .checkout-label {
+          display: block;
+          color: #405c49;
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        .checkout-radio {
+          accent-color: #176b43;
+          width: 17px;
+          height: 17px;
+        }
+
+        .checkout-payment {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 15px;
+          border: 1px solid #e4eae3;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all .2s;
+        }
+
+        .checkout-payment.selected {
+          background: #f0f7f1;
+          border-color: #4a9064;
+        }
+
+        .checkout-payment:hover {
+          border-color: #4a9064;
+        }
+
+        .checkout-place-button:hover {
+          background: #105b37 !important;
+          transform: translateY(-1px);
+        }
+
+        .checkout-edit-button:hover {
+          background: #e9f3eb;
+        }
+
+        @media (max-width: 820px) {
+          .checkout-layout {
+            grid-template-columns: 1fr !important;
+          }
+
+          .checkout-summary {
+            position: static !important;
+          }
+
+          .checkout-header {
+            align-items: flex-start !important;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .checkout-page-inner {
+            padding: 25px 14px !important;
+          }
+
+          .checkout-form-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .checkout-header h1 {
+            font-size: 29px !important;
+          }
+
+          .checkout-main-panel {
+            padding: 21px 17px !important;
+          }
+
+          .checkout-summary {
+            padding: 21px 17px !important;
+          }
+
+          .checkout-header button {
+            padding: 9px 12px !important;
+          }
+        }
+      `}</style>
+
+      <div className="checkout-page-inner" style={styles.container}>
+
         {/* HEADER */}
-        <div style={styles.header}>
+
+        <div className="checkout-header" style={styles.header}>
           <div>
-            <span style={styles.eyebrow}>ASUNAM FOOD</span>
+            <div style={styles.brand}>
+              <span style={styles.brandSymbol}></span>
+              ASUNAM FOOD
+            </div>
 
             <h1 style={styles.title}>Checkout</h1>
 
             <p style={styles.subtitle}>
-              Complete your order and enjoy your meal ❤️
+              Almost there! Your delicious food is waiting. 💚
             </p>
           </div>
 
           <button
+            type="button"
             style={styles.backButton}
             onClick={() => {
-              window.history.back();
+              window.location.href = "/cart";
             }}
           >
-            ← Back
+            ← Back to Cart
           </button>
         </div>
 
         {/* ERROR */}
+
         {error && (
           <div style={styles.errorBox}>
             ⚠️ {error}
@@ -185,533 +405,873 @@ const Checkout = () => {
         )}
 
         <form onSubmit={handlePlaceOrder}>
-          <div style={styles.grid}>
-            {/* LEFT */}
-            <div>
+          <div
+            className="checkout-layout"
+            style={styles.grid}
+          >
+
+            {/* LEFT SIDE */}
+
+            <div
+              className="checkout-main-panel"
+              style={styles.mainPanel}
+            >
+
               {/* DELIVERY ADDRESS */}
-              <section style={styles.card}>
+
+              <section>
                 <div style={styles.sectionHeader}>
-                  <div style={styles.sectionIcon}>📍</div>
+                  <div style={styles.number}>01</div>
 
                   <div>
                     <h2 style={styles.sectionTitle}>
-                      Delivery Address
+                      Delivery address
                     </h2>
 
                     <p style={styles.sectionText}>
-                      Where should we deliver your food?
+                      Where would you like your order delivered?
                     </p>
                   </div>
                 </div>
 
-                <div style={styles.formGrid}>
-                  <div style={styles.field}>
-                    <label>Full Name</label>
+                {/* SAVED ADDRESS DISPLAY */}
 
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Enter your name"
-                    />
-                  </div>
-
-                  <div style={styles.field}>
-                    <label>Phone Number</label>
-
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="Enter phone number"
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      ...styles.field,
-                      gridColumn: "1 / -1",
-                    }}
-                  >
-                    <label>Street / Address</label>
-
-                    <input
-                      type="text"
-                      name="street"
-                      value={formData.street}
-                      onChange={handleChange}
-                      placeholder="House no, street, area"
-                    />
-                  </div>
-
-                  <div style={styles.field}>
-                    <label>City</label>
-
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      placeholder="Enter city"
-                    />
-                  </div>
-
-                  <div style={styles.field}>
-                    <label>State</label>
-
-                    <input
-                      type="text"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleChange}
-                      placeholder="Enter state"
-                    />
-                  </div>
-
-                  <div style={styles.field}>
-                    <label>Pincode</label>
-
-                    <input
-                      type="text"
-                      name="pincode"
-                      value={formData.pincode}
-                      onChange={handleChange}
-                      placeholder="6-digit pincode"
-                      maxLength={6}
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* PAYMENT */}
-              <section style={styles.card}>
-                <div style={styles.sectionHeader}>
-                  <div style={styles.sectionIcon}>💳</div>
-
-                  <div>
-                    <h2 style={styles.sectionTitle}>
-                      Payment Method
-                    </h2>
-
-                    <p style={styles.sectionText}>
-                      Choose how you want to pay
-                    </p>
-                  </div>
-                </div>
-
-                <label style={styles.paymentOption}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="cod"
-                    checked={paymentMethod === "cod"}
-                    onChange={(e) =>
-                      setPaymentMethod(e.target.value)
-                    }
-                  />
-
-                  <div>
-                    <strong>Cash on Delivery</strong>
-                    <p>Pay when your order arrives</p>
-                  </div>
-                </label>
-
-                <label style={styles.paymentOption}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="online"
-                    checked={paymentMethod === "online"}
-                    onChange={(e) =>
-                      setPaymentMethod(e.target.value)
-                    }
-                  />
-
-                  <div>
-                    <strong>Online Payment</strong>
-                    <p>Payment gateway will be connected later</p>
-                  </div>
-                </label>
-
-                {/* NOTE */}
-                <div style={styles.noteField}>
-                  <label>Delivery Note (Optional)</label>
-
-                  <textarea
-                    name="customerNote"
-                    value={formData.customerNote}
-                    onChange={handleChange}
-                    placeholder="Example: Please call when you arrive..."
-                    maxLength={300}
-                    rows={4}
-                  />
-                </div>
-              </section>
-            </div>
-
-            {/* RIGHT */}
-            <div>
-              <section style={styles.summaryCard}>
-                <h2 style={styles.summaryTitle}>
-                  Order Summary
-                </h2>
-
-                <div style={styles.restaurantBox}>
-                  <div>
-                    <span style={styles.smallLabel}>
-                      RESTAURANT
-                    </span>
-
-                    <strong>
-                      {cart.restaurant?.name ||
-                        cart.items?.[0]?.restaurant?.name ||
-                        "ASUNAM FOOD"}
-                    </strong>
-                  </div>
-                </div>
-
-                {/* ITEMS */}
-                <div style={styles.items}>
-                  {cart.items.map((item) => (
-                    <div
-                      key={item._id}
-                      style={styles.item}
-                    >
-                      <img
-                        src={item.food?.image}
-                        alt={item.food?.name || "Food"}
-                        style={styles.itemImage}
-                      />
-
-                      <div style={styles.itemInfo}>
-                        <strong>
-                          {item.food?.name || "Food item"}
-                        </strong>
-
-                        <span>
-                          ₹{item.price} × {item.quantity}
+                {savedAddress && !isEditingAddress ? (
+                  <div style={styles.savedAddress}>
+                    <div style={styles.savedAddressTop}>
+                      <div>
+                        <span style={styles.savedBadge}>
+                          ✓ SAVED ADDRESS
                         </span>
+
+                        <h3 style={styles.savedName}>
+                          {savedAddress.name}
+                        </h3>
                       </div>
 
-                      <strong>
-                        ₹{item.price * item.quantity}
-                      </strong>
+                      <button
+                        type="button"
+                        className="checkout-edit-button"
+                        style={styles.editButton}
+                        onClick={handleEditAddress}
+                      >
+                        ✎ Change
+                      </button>
                     </div>
-                  ))}
+
+                    <p style={styles.savedAddressText}>
+                      {savedAddress.street}
+                    </p>
+
+                    <p style={styles.savedAddressText}>
+                      {savedAddress.city}, {savedAddress.state} -{" "}
+                      {savedAddress.pincode}
+                    </p>
+
+                    <p style={styles.savedPhone}>
+                      ☎ {savedAddress.phone}
+                    </p>
+                  </div>
+                ) : (
+
+                  <div className="checkout-form-grid" style={styles.formGrid}>
+
+                    <div>
+                      <label className="checkout-label">
+                        Full name
+                      </label>
+
+                      <input
+                        className="checkout-field"
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Enter your full name"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="checkout-label">
+                        Phone number
+                      </label>
+
+                      <input
+                        className="checkout-field"
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="Enter phone number"
+                        required
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label className="checkout-label">
+                        House no. / Street / Area
+                      </label>
+
+                      <input
+                        className="checkout-field"
+                        type="text"
+                        name="street"
+                        value={formData.street}
+                        onChange={handleChange}
+                        placeholder="House number, street, landmark"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="checkout-label">
+                        City
+                      </label>
+
+                      <input
+                        className="checkout-field"
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        placeholder="Enter city"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="checkout-label">
+                        State
+                      </label>
+
+                      <input
+                        className="checkout-field"
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        placeholder="Enter state"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="checkout-label">
+                        Pincode
+                      </label>
+
+                      <input
+                        className="checkout-field"
+                        type="text"
+                        name="pincode"
+                        value={formData.pincode}
+                        onChange={handleChange}
+                        placeholder="6-digit pincode"
+                        maxLength={6}
+                        inputMode="numeric"
+                        required
+                      />
+                    </div>
+
+                    {savedAddress && (
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <button
+                          type="button"
+                          style={styles.cancelEdit}
+                          onClick={handleCancelAddressEdit}
+                        >
+                          Cancel address changes
+                        </button>
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+              </section>
+
+              <div style={styles.sectionDivider} />
+
+              {/* PAYMENT METHOD */}
+
+              <section>
+                <div style={styles.sectionHeader}>
+                  <div style={styles.number}>02</div>
+
+                  <div>
+                    <h2 style={styles.sectionTitle}>
+                      Payment method
+                    </h2>
+
+                    <p style={styles.sectionText}>
+                      Choose your preferred payment option.
+                    </p>
+                  </div>
                 </div>
 
-                <div style={styles.divider}></div>
+                <div style={styles.paymentList}>
 
-                <div style={styles.priceRow}>
-                  <span>Item Total</span>
-                  <span>₹{cart.subtotal || 0}</span>
+                  <label
+                    className={`checkout-payment ${
+                      paymentMethod === "cod" ? "selected" : ""
+                    }`}
+                  >
+                    <input
+                      className="checkout-radio"
+                      type="radio"
+                      name="payment"
+                      value="cod"
+                      checked={paymentMethod === "cod"}
+                      onChange={(e) =>
+                        setPaymentMethod(e.target.value)
+                      }
+                    />
+
+                    <div>
+                      <strong style={styles.paymentTitle}>
+                        Cash on Delivery
+                      </strong>
+
+                      <p style={styles.paymentDescription}>
+                        Pay when your order arrives.
+                      </p>
+                    </div>
+
+                    <span style={styles.paymentIcon}>💵</span>
+                  </label>
+
+                  <label
+                    className={`checkout-payment ${
+                      paymentMethod === "online" ? "selected" : ""
+                    }`}
+                  >
+                    <input
+                      className="checkout-radio"
+                      type="radio"
+                      name="payment"
+                      value="online"
+                      checked={paymentMethod === "online"}
+                      onChange={(e) =>
+                        setPaymentMethod(e.target.value)
+                      }
+                    />
+
+                    <div>
+                      <strong style={styles.paymentTitle}>
+                        Online Payment
+                      </strong>
+
+                      <p style={styles.paymentDescription}>
+                        Payment gateway will be connected later.
+                      </p>
+                    </div>
+
+                    <span style={styles.paymentIcon}>💳</span>
+                  </label>
+
+                </div>
+              </section>
+
+              <div style={styles.sectionDivider} />
+
+              {/* DELIVERY NOTE */}
+
+              <section>
+                <div style={styles.noteHeading}>
+                  <div>
+                    <h2 style={styles.sectionTitle}>
+                      Delivery instructions
+                    </h2>
+
+                    <p style={styles.sectionText}>
+                      Any special instructions? (Optional)
+                    </p>
+                  </div>
+
+                  <span style={styles.noteIcon}>📝</span>
                 </div>
 
-                <div style={styles.priceRow}>
-                  <span>Delivery Fee</span>
-                  <span>₹{cart.deliveryFee || 0}</span>
-                </div>
+                <textarea
+                  className="checkout-field"
+                  name="customerNote"
+                  value={formData.customerNote}
+                  onChange={handleChange}
+                  placeholder="Example: Please call when you arrive..."
+                  maxLength={300}
+                  rows={3}
+                  style={styles.noteInput}
+                />
 
-                <div style={styles.priceRow}>
-                  <span>Discount</span>
-                  <span>- ₹{cart.discount || 0}</span>
-                </div>
-
-                <div style={styles.divider}></div>
-
-                <div style={styles.totalRow}>
-                  <span>Total to Pay</span>
-
-                  <strong>
-                    ₹{cart.totalAmount || 0}
-                  </strong>
-                </div>
-
-                <button
-                  type="submit"
-                  style={{
-                    ...styles.placeOrderButton,
-                    opacity: loading ? 0.7 : 1,
-                  }}
-                  disabled={loading}
-                >
-                  {loading
-                    ? "Placing Order..."
-                    : "Place Order →"}
-                </button>
-
-                <p style={styles.secureText}>
-                  🔒 Your order information is secure
+                <p style={styles.noteCount}>
+                  {formData.customerNote.length}/300
                 </p>
               </section>
+
             </div>
+
+            {/* RIGHT SIDE - ORDER SUMMARY */}
+
+            <div
+              className="checkout-summary"
+              style={styles.summaryCard}
+            >
+
+              <div style={styles.summaryHeading}>
+                <div>
+                  <span style={styles.summaryEyebrow}>
+                    YOUR ORDER
+                  </span>
+
+                  <h2 style={styles.summaryTitle}>
+                    Order summary
+                  </h2>
+                </div>
+
+                <span style={styles.bagIcon}>🛍️</span>
+              </div>
+
+              {/* RESTAURANT */}
+
+              <div style={styles.restaurantInfo}>
+                <span style={styles.smallLabel}>
+                  FROM RESTAURANT
+                </span>
+
+                <strong>
+                  {cart.restaurant?.name ||
+                    cart.items?.[0]?.restaurant?.name ||
+                    "ASUNAM FOOD"}
+                </strong>
+              </div>
+
+              {/* FOOD ITEMS */}
+
+              <div style={styles.items}>
+                {cart.items.map((item, index) => (
+                  <div
+                    key={item._id || index}
+                    style={styles.item}
+                  >
+                    <img
+                      src={item.food?.image}
+                      alt={item.food?.name || "Food"}
+                      style={styles.itemImage}
+                    />
+
+                    <div style={styles.itemInfo}>
+                      <strong>
+                        {item.food?.name || "Food item"}
+                      </strong>
+
+                      <span>
+                        ₹{item.price} × {item.quantity}
+                      </span>
+                    </div>
+
+                    <strong style={styles.itemPrice}>
+                      ₹{item.price * item.quantity}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+
+              <div style={styles.divider} />
+
+              {/* PRICE DETAILS */}
+
+              <div style={styles.priceRow}>
+                <span>Item total</span>
+                <span>₹{cart.subtotal || 0}</span>
+              </div>
+
+              <div style={styles.priceRow}>
+                <span>Delivery fee</span>
+                <span>₹{cart.deliveryFee || 0}</span>
+              </div>
+
+              <div style={styles.priceRow}>
+                <span>Discount</span>
+                <span style={styles.discountText}>
+                  - ₹{cart.discount || 0}
+                </span>
+              </div>
+
+              <div style={styles.divider} />
+
+              <div style={styles.totalRow}>
+                <span>Total to pay</span>
+                <strong>
+                  ₹{cart.totalAmount || 0}
+                </strong>
+              </div>
+
+              {/* PLACE ORDER */}
+
+              <button
+                type="submit"
+                className="checkout-place-button"
+                style={{
+                  ...styles.placeOrderButton,
+                  opacity: loading ? 0.7 : 1,
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+                disabled={loading}
+              >
+                {loading
+                  ? "Placing your order..."
+                  : "Place Order  →"}
+              </button>
+
+              <div style={styles.secureText}>
+                <span>🔒</span>
+                Your order information is secure.
+              </div>
+
+              <div style={styles.deliveryPromise}>
+                <span>💚</span>
+                <p>
+                  Freshly prepared and delivered with care.
+                </p>
+              </div>
+
+            </div>
+
           </div>
         </form>
+
       </div>
     </div>
   );
 };
 
+// ======================================
+// STYLES
+// ======================================
+
 const styles = {
+
   page: {
     minHeight: "100vh",
-    background: "#f7f7f7",
-    padding: "40px 20px",
-    boxSizing: "border-box",
+    background: "#f5f8f4",
+    padding: "0",
+    color: "#203d2c",
   },
 
   container: {
-    maxWidth: "1100px",
+    maxWidth: "1160px",
     width: "100%",
     margin: "0 auto",
+    padding: "38px 24px 55px",
   },
 
   header: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: "20px",
     marginBottom: "30px",
-    flexWrap: "wrap",
   },
 
-  eyebrow: {
-    fontSize: "12px",
-    fontWeight: "700",
-    letterSpacing: "2px",
-    color: "#ff6b00",
+  brand: {
+    display: "flex",
+    alignItems: "center",
+    gap: "7px",
+    fontSize: "11px",
+    fontWeight: "800",
+    letterSpacing: "2.5px",
+    color: "#187047",
+  },
+
+  brandSymbol: {
+    color: "#d4a94c",
+    fontSize: "17px",
   },
 
   title: {
-    margin: "8px 0 4px",
+    margin: "9px 0 5px",
     fontSize: "36px",
-    color: "#222",
+    lineHeight: 1.2,
+    fontWeight: "750",
+    color: "#153c28",
   },
 
   subtitle: {
     margin: 0,
-    color: "#777",
+    color: "#75877a",
+    fontSize: "14px",
   },
 
   backButton: {
     background: "#fff",
-    border: "1px solid #ddd",
-    padding: "11px 16px",
+    color: "#24573a",
+    border: "1px solid #dce8dc",
+    padding: "12px 17px",
     borderRadius: "10px",
     cursor: "pointer",
     fontWeight: "600",
+    whiteSpace: "nowrap",
   },
 
   errorBox: {
-    background: "#fff0f0",
-    color: "#c62828",
-    border: "1px solid #ffd0d0",
-    padding: "14px 16px",
-    borderRadius: "12px",
+    background: "#fff1f0",
+    color: "#b42318",
+    padding: "13px 16px",
+    borderRadius: "10px",
     marginBottom: "20px",
+    fontSize: "14px",
   },
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.4fr) minmax(320px, 0.8fr)",
-    gap: "24px",
+    gridTemplateColumns: "minmax(0, 1.45fr) minmax(280px, 0.8fr)",
+    gap: "27px",
     alignItems: "start",
   },
 
-  card: {
+  mainPanel: {
     background: "#fff",
-    borderRadius: "18px",
-    padding: "24px",
-    marginBottom: "20px",
-    boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
-  },
-
-  summaryCard: {
-    background: "#fff",
-    borderRadius: "18px",
-    padding: "24px",
-    boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
-    position: "sticky",
-    top: "20px",
+    borderRadius: "20px",
+    padding: "30px",
+    boxShadow: "0 8px 30px rgba(30,70,40,0.045)",
   },
 
   sectionHeader: {
     display: "flex",
-    gap: "14px",
     alignItems: "center",
-    marginBottom: "22px",
+    gap: "14px",
+    marginBottom: "25px",
   },
 
-  sectionIcon: {
-    width: "44px",
-    height: "44px",
-    borderRadius: "12px",
+  number: {
+    width: "37px",
+    height: "37px",
+    minWidth: "37px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#fff1e8",
-    fontSize: "22px",
+    borderRadius: "11px",
+    background: "#edf5ed",
+    color: "#176b43",
+    fontSize: "13px",
+    fontWeight: "800",
   },
 
   sectionTitle: {
     margin: 0,
-    color: "#222",
-    fontSize: "20px",
+    color: "#183d29",
+    fontSize: "19px",
+    fontWeight: "700",
   },
 
   sectionText: {
-    margin: "4px 0 0",
-    color: "#888",
+    margin: "5px 0 0",
     fontSize: "13px",
+    color: "#87948a",
   },
 
   formGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "16px",
+    gap: "19px 17px",
   },
 
-  field: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "7px",
+  sectionDivider: {
+    height: "1px",
+    background: "#edf1ec",
+    margin: "30px 0",
   },
 
-  noteField: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "7px",
-    marginTop: "20px",
+  savedAddress: {
+    padding: "20px",
+    background: "#f5faf5",
+    borderRadius: "13px",
+    borderLeft: "3px solid #267449",
   },
 
-  paymentOption: {
+  savedAddressTop: {
     display: "flex",
-    gap: "12px",
-    alignItems: "flex-start",
-    border: "1px solid #e5e5e5",
-    borderRadius: "12px",
-    padding: "15px",
-    marginBottom: "10px",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "13px",
+  },
+
+  savedBadge: {
+    color: "#267449",
+    fontWeight: "800",
+    fontSize: "10px",
+    letterSpacing: "1.2px",
+  },
+
+  savedName: {
+    margin: "6px 0 0",
+    fontSize: "17px",
+    color: "#183d29",
+  },
+
+  savedAddressText: {
+    margin: "5px 0",
+    color: "#526c59",
+    fontSize: "13px",
+    lineHeight: 1.5,
+  },
+
+  savedPhone: {
+    margin: "10px 0 0",
+    color: "#526c59",
+    fontSize: "13px",
+    fontWeight: "600",
+  },
+
+  editButton: {
+    background: "#fff",
+    border: "1px solid #cddfcf",
+    color: "#176b43",
+    borderRadius: "8px",
+    padding: "9px 12px",
+    fontWeight: "700",
     cursor: "pointer",
+    fontSize: "12px",
+  },
+
+  cancelEdit: {
+    background: "transparent",
+    color: "#176b43",
+    border: "none",
+    cursor: "pointer",
+    padding: "5px 0",
+    fontWeight: "600",
+    fontSize: "13px",
+  },
+
+  paymentList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "11px",
+  },
+
+  paymentTitle: {
+    display: "block",
+    color: "#245239",
+    fontSize: "14px",
+  },
+
+  paymentDescription: {
+    margin: "5px 0 0",
+    color: "#849187",
+    fontSize: "12px",
+  },
+
+  paymentIcon: {
+    marginLeft: "auto",
+    fontSize: "20px",
+  },
+
+  noteHeading: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "17px",
+  },
+
+  noteIcon: {
+    fontSize: "21px",
+  },
+
+  noteInput: {
+    display: "block",
+    width: "100%",
+    resize: "vertical",
+    lineHeight: 1.5,
+  },
+
+  noteCount: {
+    textAlign: "right",
+    margin: "5px 0 0",
+    color: "#9aa49b",
+    fontSize: "11px",
+  },
+
+  // ORDER SUMMARY
+
+  summaryCard: {
+    background: "#fff",
+    borderRadius: "20px",
+    padding: "27px",
+    boxShadow: "0 8px 30px rgba(30,70,40,0.055)",
+    position: "sticky",
+    top: "22px",
+  },
+
+  summaryHeading: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "21px",
+  },
+
+  summaryEyebrow: {
+    fontSize: "10px",
+    fontWeight: "800",
+    color: "#b08b3c",
+    letterSpacing: "1.8px",
   },
 
   summaryTitle: {
-    margin: "0 0 18px",
+    margin: "6px 0 0",
+    color: "#183d29",
     fontSize: "22px",
-    color: "#222",
   },
 
-  restaurantBox: {
-    background: "#fff7f1",
-    borderRadius: "12px",
-    padding: "14px",
-    marginBottom: "18px",
+  bagIcon: {
+    fontSize: "24px",
+  },
+
+  restaurantInfo: {
+    padding: "13px 0",
+    marginBottom: "17px",
+    borderTop: "1px solid #edf1ec",
+    borderBottom: "1px solid #edf1ec",
   },
 
   smallLabel: {
     display: "block",
-    fontSize: "10px",
-    letterSpacing: "1.5px",
-    color: "#999",
-    marginBottom: "4px",
+    fontSize: "9px",
+    color: "#9a9e91",
+    fontWeight: "700",
+    letterSpacing: "1.4px",
+    marginBottom: "5px",
   },
 
   items: {
     display: "flex",
     flexDirection: "column",
-    gap: "14px",
+    gap: "17px",
   },
 
   item: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
+    gap: "11px",
   },
 
   itemImage: {
-    width: "55px",
-    height: "55px",
-    borderRadius: "10px",
+    width: "53px",
+    height: "53px",
     objectFit: "cover",
+    borderRadius: "11px",
+    background: "#f2f5f1",
   },
 
   itemInfo: {
     flex: 1,
+    minWidth: 0,
     display: "flex",
     flexDirection: "column",
-    gap: "4px",
+    gap: "5px",
+  },
+
+  itemPrice: {
+    fontSize: "13px",
+    whiteSpace: "nowrap",
+    color: "#245239",
   },
 
   divider: {
     height: "1px",
-    background: "#eee",
-    margin: "18px 0",
+    background: "#edf1ec",
+    margin: "21px 0",
   },
 
   priceRow: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "10px",
-    color: "#666",
-    fontSize: "14px",
+    gap: "10px",
+    marginBottom: "13px",
+    color: "#78857b",
+    fontSize: "13px",
+  },
+
+  discountText: {
+    color: "#24804e",
+    fontWeight: "600",
   },
 
   totalRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    fontSize: "18px",
-    color: "#222",
+    color: "#183d29",
+    fontSize: "16px",
   },
 
   placeOrderButton: {
     width: "100%",
     border: "none",
-    background: "#ff6b00",
+    background: "#176b43",
     color: "#fff",
-    padding: "14px",
-    borderRadius: "12px",
-    fontSize: "16px",
-    fontWeight: "700",
-    cursor: "pointer",
-    marginTop: "22px",
+    padding: "16px",
+    borderRadius: "11px",
+    fontSize: "15px",
+    fontWeight: "750",
+    marginTop: "24px",
+    transition: "all .2s",
   },
 
   secureText: {
     textAlign: "center",
-    color: "#999",
-    fontSize: "12px",
-    margin: "12px 0 0",
+    color: "#929c94",
+    fontSize: "11px",
+    marginTop: "13px",
   },
+
+  deliveryPromise: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    background: "#f5faf5",
+    borderRadius: "9px",
+    padding: "10px",
+    marginTop: "18px",
+  },
+
+  deliveryPromiseText: {
+  margin: 0,
+  fontSize: "11px",
+  color: "#607767",
+},
+
+  // EMPTY / AUTH MESSAGES
 
   centerPage: {
     minHeight: "80vh",
     display: "flex",
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
     padding: "20px",
+    background: "#f5f8f4",
   },
 
   messageBox: {
     background: "#fff",
-    borderRadius: "18px",
-    padding: "50px 25px",
+    padding: "45px 25px",
+    borderRadius: "20px",
     textAlign: "center",
     maxWidth: "420px",
     width: "100%",
-    boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
+    boxShadow: "0 8px 30px rgba(0,0,0,0.06)",
   },
 
-  icon: {
-    fontSize: "50px",
-    marginBottom: "10px",
+  messageIcon: {
+    fontSize: "45px",
+    marginBottom: "12px",
   },
 
   primaryButton: {
     border: "none",
-    background: "#ff6b00",
+    background: "#176b43",
     color: "#fff",
     padding: "12px 20px",
     borderRadius: "10px",

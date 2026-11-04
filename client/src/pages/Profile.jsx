@@ -446,7 +446,7 @@ const Profile = () => {
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#f7f7f7",
+    background: "#f0fdf4",
     padding: "40px 20px",
     boxSizing: "border-box",
   },
@@ -471,7 +471,7 @@ const styles = {
     fontSize: "11px",
     fontWeight: "800",
     letterSpacing: "1.8px",
-    color: "#ff6b00",
+    color: "#166534",
     marginBottom: "6px",
   },
 
@@ -487,9 +487,9 @@ const styles = {
   },
 
   backButton: {
-    border: "1px solid #ddd",
+    border: "1px solid #d1fae5",
     background: "#fff",
-    color: "#222",
+    color: "#166534",
     padding: "11px 16px",
     borderRadius: "10px",
     cursor: "pointer",
@@ -524,7 +524,7 @@ const styles = {
     height: "100px",
     borderRadius: "50%",
     objectFit: "cover",
-    border: "4px solid #fff1e8",
+    border: "4px solid #dcfce7",
   },
 
   avatarFallback: {
@@ -534,17 +534,17 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#fff1e8",
-    color: "#ff6b00",
+    background: "#dcfce7",
+    color: "#166534",
     fontSize: "38px",
     fontWeight: "800",
-    border: "4px solid #ffe2ce",
+    border: "4px solid #bbf7d0",
   },
 
   profileName: {
     margin: "0",
     fontSize: "22px",
-    color: "#222",
+    color: "#14532d",
   },
 
   profileEmail: {
@@ -556,8 +556,8 @@ const styles = {
 
   roleBadge: {
     display: "inline-block",
-    background: "#fff1e8",
-    color: "#ff6b00",
+    background: "#f0fdf4",
+    color: "#166534",
     borderRadius: "999px",
     padding: "6px 12px",
     fontSize: "11px",
@@ -625,7 +625,7 @@ const styles = {
     gap: "12px",
     alignItems: "center",
     padding: "14px",
-    background: "#fff7f1",
+    background: "#f0fdf4",
     borderRadius: "12px",
     margin: "10px 0 18px",
   },
@@ -643,7 +643,7 @@ const styles = {
   saveButton: {
     width: "100%",
     border: "none",
-    background: "#ff6b00",
+    background: "#166534",
     color: "#fff",
     padding: "14px",
     borderRadius: "11px",
@@ -701,7 +701,7 @@ const styles = {
 
   primaryButton: {
     border: "none",
-    background: "#ff6b00",
+    background: "#166534",
     color: "#fff",
     padding: "12px 20px",
     borderRadius: "10px",

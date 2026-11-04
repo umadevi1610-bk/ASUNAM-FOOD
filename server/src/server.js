@@ -10,6 +10,8 @@ const foodRoutes = require("./routes/foodRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const profileRoutes = require("./routes/profileRoutes");
+const deliveryRoutes = require("./routes/deliveryRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
 
 const app = express();
 
@@ -50,6 +52,10 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 
 app.use("/api/profile", profileRoutes);
+
+app.use("/api/delivery", deliveryRoutes);
+
+app.use("/api/reviews", reviewRoutes);
 
 // ===============================
 // 404 ROUTE

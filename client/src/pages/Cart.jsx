@@ -394,10 +394,11 @@ const Cart = () => {
   );
 };
 
+
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#f7f7f7",
+    background: "#F0FDF4",
     padding: "38px 20px 50px",
     boxSizing: "border-box",
   },
@@ -422,26 +423,26 @@ const styles = {
     fontSize: "10px",
     fontWeight: "800",
     letterSpacing: "1.8px",
-    color: "#ff5a36",
+    color: "#166534",
     marginBottom: "6px",
   },
 
   title: {
     margin: 0,
     fontSize: "35px",
-    color: "#222",
+    color: "#14532D",
   },
 
   subtitle: {
     margin: "6px 0 0",
-    color: "#777",
+    color: "#64748B",
     fontSize: "14px",
   },
 
   backButton: {
-    border: "1px solid #ddd",
-    background: "#fff",
-    color: "#333",
+    border: "1px solid #D1FAE5",
+    background: "#FFFFFF",
+    color: "#166534",
     padding: "11px 16px",
     borderRadius: "10px",
     cursor: "pointer",
@@ -451,17 +452,18 @@ const styles = {
   grid: {
     display: "grid",
     gridTemplateColumns:
-      "minmax(0, 1.45fr) minmax(310px, 0.75fr)",
+      "minmax(0, 1.45fr) minmax(0, 0.75fr)",
     gap: "24px",
     alignItems: "start",
   },
 
   itemsCard: {
-    background: "#fff",
+    background: "#FFFFFF",
+    border: "1px solid #D1FAE5",
     borderRadius: "18px",
     padding: "24px",
-    boxShadow:
-      "0 6px 20px rgba(0,0,0,0.06)",
+    boxShadow: "0 6px 20px rgba(22, 101, 52, 0.06)",
+    minWidth: 0,
   },
 
   restaurantHeader: {
@@ -470,14 +472,14 @@ const styles = {
     alignItems: "center",
     gap: "20px",
     paddingBottom: "18px",
-    borderBottom: "1px solid #eee",
+    borderBottom: "1px solid #D1FAE5",
   },
 
   smallLabel: {
     display: "block",
     fontSize: "9px",
     letterSpacing: "1.4px",
-    color: "#999",
+    color: "#64748B",
     marginBottom: "3px",
     fontWeight: "800",
   },
@@ -485,16 +487,17 @@ const styles = {
   restaurantName: {
     margin: 0,
     fontSize: "20px",
-    color: "#222",
+    color: "#14532D",
   },
 
   itemCount: {
-    background: "#fff1e8",
-    color: "#e85d04",
+    background: "#DCFCE7",
+    color: "#166534",
     padding: "7px 10px",
     borderRadius: "999px",
     fontSize: "11px",
     fontWeight: "700",
+    whiteSpace: "nowrap",
   },
 
   itemsList: {
@@ -507,7 +510,8 @@ const styles = {
     alignItems: "center",
     gap: "16px",
     padding: "19px 0",
-    borderBottom: "1px solid #eee",
+    borderBottom: "1px solid #D1FAE5",
+    minWidth: 0,
   },
 
   itemImage: {
@@ -515,7 +519,7 @@ const styles = {
     height: "90px",
     objectFit: "cover",
     borderRadius: "14px",
-    background: "#f1f1f1",
+    background: "#DCFCE7",
     flexShrink: 0,
   },
 
@@ -526,7 +530,7 @@ const styles = {
 
   foodCategory: {
     fontSize: "9px",
-    color: "#999",
+    color: "#64748B",
     textTransform: "uppercase",
     letterSpacing: "1px",
     fontWeight: "700",
@@ -535,12 +539,13 @@ const styles = {
   itemName: {
     margin: "5px 0",
     fontSize: "18px",
-    color: "#222",
+    color: "#14532D",
+    overflowWrap: "anywhere",
   },
 
   unitPrice: {
     margin: 0,
-    color: "#888",
+    color: "#64748B",
     fontSize: "13px",
   },
 
@@ -556,23 +561,24 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    border: "1px solid #ddd",
+    border: "1px solid #D1FAE5",
     borderRadius: "10px",
     padding: "4px",
     width: "fit-content",
+    background: "#FFFFFF",
   },
 
   removeButton: {
     border: "none",
     background: "transparent",
-    color: "#c62828",
+    color: "#B91C1C",
     cursor: "pointer",
     fontSize: "12px",
     fontWeight: "600",
   },
 
   itemTotal: {
-    color: "#222",
+    color: "#14532D",
     fontSize: "17px",
     whiteSpace: "nowrap",
   },
@@ -586,25 +592,26 @@ const styles = {
   clearButton: {
     border: "none",
     background: "transparent",
-    color: "#c62828",
+    color: "#B91C1C",
     cursor: "pointer",
     fontWeight: "700",
     fontSize: "12px",
   },
 
   summaryCard: {
-    background: "#fff",
+    background: "#FFFFFF",
+    border: "1px solid #D1FAE5",
     borderRadius: "18px",
     padding: "24px",
-    boxShadow:
-      "0 6px 20px rgba(0,0,0,0.06)",
+    boxShadow: "0 6px 20px rgba(22, 101, 52, 0.06)",
     position: "sticky",
     top: "20px",
+    minWidth: 0,
   },
 
   summaryTitle: {
     margin: "4px 0 20px",
-    color: "#222",
+    color: "#14532D",
     fontSize: "22px",
   },
 
@@ -618,17 +625,17 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     gap: "20px",
-    color: "#666",
+    color: "#475569",
     fontSize: "14px",
   },
 
   discount: {
-    color: "#21843a",
+    color: "#15803D",
   },
 
   divider: {
     height: "1px",
-    background: "#eee",
+    background: "#D1FAE5",
     margin: "20px 0",
   },
 
@@ -637,7 +644,7 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     gap: "15px",
-    color: "#222",
+    color: "#14532D",
     fontSize: "18px",
     fontWeight: "800",
   },
@@ -647,15 +654,16 @@ const styles = {
     gap: "10px",
     marginTop: "20px",
     padding: "13px",
-    background: "#faf7f5",
+    background: "#F0FDF4",
+    border: "1px solid #D1FAE5",
     borderRadius: "12px",
   },
 
   checkoutButton: {
     width: "100%",
     border: "none",
-    background: "#ff5a36",
-    color: "#fff",
+    background: "#166534",
+    color: "#FFFFFF",
     padding: "14px",
     borderRadius: "12px",
     cursor: "pointer",
@@ -666,9 +674,9 @@ const styles = {
 
   continueButton: {
     width: "100%",
-    border: "1px solid #ddd",
-    background: "#fff",
-    color: "#333",
+    border: "1px solid #D1FAE5",
+    background: "#FFFFFF",
+    color: "#166534",
     padding: "12px",
     borderRadius: "12px",
     cursor: "pointer",
@@ -684,17 +692,19 @@ const styles = {
     justifyContent: "center",
     padding: "20px",
     boxSizing: "border-box",
+    background: "#F0FDF4",
   },
 
   messageCard: {
     width: "100%",
     maxWidth: "430px",
-    background: "#fff",
+    boxSizing: "border-box",
+    background: "#FFFFFF",
+    border: "1px solid #D1FAE5",
     padding: "45px 25px",
     borderRadius: "18px",
     textAlign: "center",
-    boxShadow:
-      "0 6px 20px rgba(0,0,0,0.06)",
+    boxShadow: "0 6px 20px rgba(22, 101, 52, 0.06)",
   },
 
   bigIcon: {
@@ -704,18 +714,18 @@ const styles = {
 
   messageTitle: {
     margin: 0,
-    color: "#222",
+    color: "#14532D",
   },
 
   messageText: {
-    color: "#777",
+    color: "#64748B",
     lineHeight: 1.6,
   },
 
   primaryButton: {
     border: "none",
-    background: "#ff5a36",
-    color: "#fff",
+    background: "#166534",
+    color: "#FFFFFF",
     padding: "12px 20px",
     borderRadius: "10px",
     cursor: "pointer",
@@ -729,14 +739,14 @@ const styles = {
 // ======================================
 const styleSheet = document.createElement("style");
 
-styleSheet.innerHTML = `
+styleSheet.textContent = `
   .quantityControl button {
     width: 30px;
     height: 30px;
     border: none;
     border-radius: 8px;
-    background: #fff1e8;
-    color: #ff5a36;
+    background: #DCFCE7;
+    color: #166534;
     font-size: 18px;
     font-weight: 700;
     cursor: pointer;
@@ -749,26 +759,27 @@ styleSheet.innerHTML = `
 
   .deliveryInfo strong {
     display: block;
-    color: #444;
+    color: #14532D;
     font-size: 12px;
     margin-bottom: 3px;
   }
 
   .deliveryInfo p {
     margin: 0;
-    color: #999;
+    color: #64748B;
     font-size: 11px;
     line-height: 1.4;
   }
 
   @media (max-width: 800px) {
     .cart-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr) !important;
     }
   }
 `;
 
-if (!document.head.contains(styleSheet)) {
+if (!document.getElementById("cart-global-styles")) {
+  styleSheet.id = "cart-global-styles";
   document.head.appendChild(styleSheet);
 }
 

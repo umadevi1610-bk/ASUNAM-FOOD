@@ -33,3 +33,30 @@ export const getOrderById = async (orderId, token) =>
       Authorization: `Bearer ${token}`,
     },
   });
+
+
+  // ======================================
+// CREATE REVIEW
+// ======================================
+
+export const createReview = async (reviewData, token) =>
+  await apiRequest("/reviews", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(reviewData),
+  });
+
+// ======================================
+// GET REVIEWS FOR AN ORDER
+// ======================================
+
+export const getOrderReviews = async (orderId, token) =>
+  await apiRequest(`/reviews/order/${orderId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });

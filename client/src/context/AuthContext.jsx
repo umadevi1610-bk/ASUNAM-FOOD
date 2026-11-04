@@ -1,9 +1,19 @@
-import { createContext, useContext, useEffect, useState } from "react";
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 import {
   registerUser,
+  registerRestaurantUser,
+  registerDeliveryUser,
   loginUser,
   customerLogin,
+  restaurantLogin,
+  deliveryLogin,
   getCurrentUser,
 } from "../services/authService";
 
@@ -13,158 +23,177 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   const [token, setToken] = useState(
-    localStorage.getItem("asunam_food_token") || null
+    localStorage.getItem("asunam_food_token")
   );
 
   const [loading, setLoading] = useState(true);
 
   // ======================================
-  // LOAD LOGGED-IN USER
+  // LOAD CURRENT USER
   // ======================================
   useEffect(() => {
-    const loadUser = async () => {
-      const savedToken = localStorage.getItem(
-        "asunam_food_token"
-      );
+    let isActive = true;
 
-      if (!savedToken) {
+    const loadUser = async () => {
+      if (!token) {
+        setUser(null);
         setLoading(false);
         return;
       }
 
+      setLoading(true);
+
       try {
-        const data = await getCurrentUser(savedToken);
+        const data = await getCurrentUser(token);
+
+        if (!isActive) return;
 
         if (data.success) {
           setUser(data.user);
-          setToken(savedToken);
+        } else {
+          localStorage.removeItem("asunam_food_token");
+          setToken(null);
+          setUser(null);
         }
       } catch (error) {
         console.error(
-          "Session expired:",
+          "Load current user error:",
           error.message
         );
 
-        localStorage.removeItem(
-          "asunam_food_token"
-        );
+        if (!isActive) return;
 
-        localStorage.removeItem(
-          "asunam_food_user"
-        );
-
-        setUser(null);
+        localStorage.removeItem("asunam_food_token");
         setToken(null);
+        setUser(null);
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     loadUser();
-  }, []);
+
+    return () => {
+      isActive = false;
+    };
+  }, [token]);
 
   // ======================================
-  // REGISTER
+  // SAVE LOGIN / REGISTRATION SESSION
   // ======================================
-  const register = async (userData) => {
-    const data = await registerUser(userData);
-
-    if (data.success) {
+  const saveSession = (data) => {
+    if (data?.success && data.token && data.user) {
       localStorage.setItem(
         "asunam_food_token",
         data.token
       );
 
-      localStorage.setItem(
-        "asunam_food_user",
-        JSON.stringify(data.user)
-      );
-
-      setToken(data.token);
       setUser(data.user);
+      setToken(data.token);
     }
 
     return data;
   };
 
   // ======================================
-  // NORMAL LOGIN
-  // EMAIL + PASSWORD
+  // NORMAL EMAIL + PASSWORD LOGIN
   // ======================================
   const login = async (loginData) => {
     const data = await loginUser(loginData);
-
-    if (data.success) {
-      localStorage.setItem(
-        "asunam_food_token",
-        data.token
-      );
-
-      localStorage.setItem(
-        "asunam_food_user",
-        JSON.stringify(data.user)
-      );
-
-      setToken(data.token);
-      setUser(data.user);
-    }
-
-    return data;
+    return saveSession(data);
   };
 
   // ======================================
   // CUSTOMER LOGIN
-  // NAME + PHONE
-  // OTP WILL BE ADDED LATER
+  // TEMPORARY NAME + PHONE LOGIN
   // ======================================
   const loginAsCustomer = async (customerData) => {
     const data = await customerLogin(customerData);
-
-    if (data.success) {
-      localStorage.setItem(
-        "asunam_food_token",
-        data.token
-      );
-
-      localStorage.setItem(
-        "asunam_food_user",
-        JSON.stringify(data.user)
-      );
-
-      setToken(data.token);
-      setUser(data.user);
-    }
-
-    return data;
+    return saveSession(data);
   };
+
+  // ======================================
+  // CUSTOMER SIGN UP
+  // ======================================
+  const registerAsCustomer = async (customerData) => {
+    const data = await registerUser(customerData);
+    return saveSession(data);
+  };
+
+  // ======================================
+  // RESTAURANT PARTNER LOGIN
+  // ======================================
+  const loginAsRestaurant = async (restaurantData) => {
+    const data = await restaurantLogin(restaurantData);
+    return saveSession(data);
+  };
+
+  // ======================================
+  // RESTAURANT PARTNER SIGN UP
+  // ======================================
+  const registerAsRestaurant = async (restaurantData) => {
+    const data = await registerRestaurantUser(restaurantData);
+    return saveSession(data);
+  };
+
+  // ======================================
+  // DELIVERY PARTNER LOGIN
+  // ======================================
+  const loginAsDelivery = async (deliveryData) => {
+    const data = await deliveryLogin(deliveryData);
+    return saveSession(data);
+  };
+
+  // ======================================
+  // DELIVERY PARTNER SIGN UP
+  // ======================================
+  const registerAsDelivery = async (deliveryData) => {
+    const data = await registerDeliveryUser(deliveryData);
+    return saveSession(data);
+  };
+
+  // ======================================
+  // LEGACY REGISTER FUNCTION
+  // ======================================
+  const register = registerAsCustomer;
 
   // ======================================
   // LOGOUT
   // ======================================
   const logout = () => {
-    localStorage.removeItem(
-      "asunam_food_token"
-    );
-
-    localStorage.removeItem(
-      "asunam_food_user"
-    );
-
-    setUser(null);
+    localStorage.removeItem("asunam_food_token");
     setToken(null);
+    setUser(null);
   };
 
+  // ======================================
+  // AUTH STATUS
+  // ======================================
+  const isAuthenticated = !!token && !!user;
+
+  // ======================================
+  // PROVIDER
+  // ======================================
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
         loading,
-        isAuthenticated: !!token && !!user,
+        isAuthenticated,
 
-        // Auth methods
         login,
         loginAsCustomer,
+        registerAsCustomer,
+
+        loginAsRestaurant,
+        registerAsRestaurant,
+
+        loginAsDelivery,
+        registerAsDelivery,
+
         register,
         logout,
       }}
@@ -175,7 +204,7 @@ export const AuthProvider = ({ children }) => {
 };
 
 // ======================================
-// CUSTOM HOOK
+// USE AUTH
 // ======================================
 export const useAuth = () => {
   const context = useContext(AuthContext);
