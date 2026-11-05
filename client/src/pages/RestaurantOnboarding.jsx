@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-
+import apiRequest from "../services/api";
 const initialForm = {
   name: "",
   description: "",
@@ -24,14 +24,6 @@ export default function RestaurantOnboarding() {
   const [error, setError] = useState("");
   const [createdRestaurant, setCreatedRestaurant] = useState(null);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -42,9 +34,14 @@ export default function RestaurantOnboarding() {
       return;
     }
 
-    if (!form.name.trim() || !form.phone.trim() ||
-        !form.cuisine.trim() || !form.street.trim() ||
-        !form.city.trim() || !form.pincode.trim()) {
+    if (
+      !form.name.trim() ||
+      !form.phone.trim() ||
+      !form.cuisine.trim() ||
+      !form.street.trim() ||
+      !form.city.trim() ||
+      !form.pincode.trim()
+    ) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -54,8 +51,10 @@ export default function RestaurantOnboarding() {
       return;
     }
 
-    if (Number(form.deliveryFee) < 0 ||
-        Number(form.minimumOrderAmount) < 0) {
+    if (
+      Number(form.deliveryFee) < 0 ||
+      Number(form.minimumOrderAmount) < 0
+    ) {
       setError("Delivery fee and minimum order cannot be negative.");
       return;
     }
@@ -63,10 +62,9 @@ export default function RestaurantOnboarding() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/restaurants", {
+      const data = await apiRequest("/restaurants", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -87,9 +85,7 @@ export default function RestaurantOnboarding() {
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok || data.success === false) {
+      if (data.success === false) {
         throw new Error(
           data.message || "Unable to create your restaurant."
         );
@@ -107,6 +103,7 @@ export default function RestaurantOnboarding() {
       setLoading(false);
     }
   };
+
 
   const fieldStyle = {
     width: "100%",

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getMyRestaurantOrders } from "../../services/restaurantService";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const RestaurantDashboard = () => {
   const { user, token, logout } = useAuth();
