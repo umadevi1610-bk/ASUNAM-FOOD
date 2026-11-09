@@ -399,6 +399,10 @@ function App() {
     return <RestaurantOrders />;
   }
 
+if (currentPath === "/delivery/onboarding") {
+  return <DeliveryProfile />;
+}
+
   if (currentPath === "/restaurant/profile") {
     return <RestaurantProfile />;
   }
