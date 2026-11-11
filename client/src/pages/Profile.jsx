@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -6,9 +7,14 @@ import {
 } from "../services/profileService";
 
 const Profile = () => {
-  const { token, isAuthenticated } = useAuth();
+  const {
+    token,
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuth();
 
   const [profile, setProfile] = useState(null);
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -28,9 +34,13 @@ const Profile = () => {
   // LOAD PROFILE
   // ======================================
   useEffect(() => {
+    let isActive = true;
+
     const loadProfile = async () => {
+      if (authLoading) return;
+
       if (!isAuthenticated || !token) {
-        setLoading(false);
+        if (isActive) setLoading(false);
         return;
       }
 
@@ -43,6 +53,8 @@ const Profile = () => {
         if (!data?.user) {
           throw new Error("Profile not found");
         }
+
+        if (!isActive) return;
 
         const user = data.user;
 
@@ -59,14 +71,23 @@ const Profile = () => {
         });
       } catch (err) {
         console.error("Load profile error:", err);
-        setError(err.message || "Failed to load profile");
+
+        if (isActive) {
+          setError(err.message || "Failed to load profile");
+        }
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     loadProfile();
-  }, [isAuthenticated, token]);
+
+    return () => {
+      isActive = false;
+    };
+  }, [isAuthenticated, token, authLoading]);
 
   // ======================================
   // HANDLE INPUT
@@ -98,7 +119,7 @@ const Profile = () => {
       setSaving(true);
 
       const profileData = {
-        name: formData.name,
+        name: formData.name.trim(),
         phone: formData.phone,
         profileImage: formData.profileImage,
         address: {
@@ -127,7 +148,7 @@ const Profile = () => {
         pincode: data.user.address?.pincode || "",
       });
 
-      setMessage("Profile updated successfully ✅");
+      setMessage("Profile updated successfully!");
     } catch (err) {
       console.error("Update profile error:", err);
       setError(err.message || "Failed to update profile");
@@ -137,9 +158,26 @@ const Profile = () => {
   };
 
   // ======================================
+  // AUTH LOADING
+  // ======================================
+  if (authLoading || loading) {
+    return (
+      <div style={styles.centerPage}>
+        <div style={styles.messageCard}>
+          <div style={styles.bigIcon}>👤</div>
+          <h2>Loading profile...</h2>
+          <p style={styles.messageText}>
+            Please wait daa ❤️
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ======================================
   // LOGIN CHECK
   // ======================================
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !token) {
     return (
       <div style={styles.centerPage}>
         <div style={styles.messageCard}>
@@ -159,23 +197,6 @@ const Profile = () => {
           >
             Go to Login
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ======================================
-  // LOADING
-  // ======================================
-  if (loading) {
-    return (
-      <div style={styles.centerPage}>
-        <div style={styles.messageCard}>
-          <div style={styles.bigIcon}>👤</div>
-          <h2>Loading profile...</h2>
-          <p style={styles.messageText}>
-            Please wait daa ❤️
-          </p>
         </div>
       </div>
     );
@@ -209,20 +230,273 @@ const Profile = () => {
     formData.name?.trim()?.charAt(0)?.toUpperCase() || "U";
 
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
+    <div style={styles.page} className="profile-page">
+
+      <style>{`
+        .profile-page,
+        .profile-page * {
+          box-sizing: border-box;
+        }
+
+        .profile-page input {
+          width: 100%;
+          min-height: 46px;
+          padding: 11px 13px;
+          border: 1px solid #dce8df;
+          border-radius: 10px;
+          background: #fbfdfb;
+          color: #172b20;
+          font-family: inherit;
+          font-size: 14px;
+          outline: none;
+          transition: .2s ease;
+        }
+
+        .profile-page input:focus {
+          border-color: #16834b;
+          background: #fff;
+          box-shadow: 0 0 0 3px rgba(22,131,75,.10);
+        }
+
+        .profile-page input:disabled {
+          background: #f0f3f0;
+          color: #7c8980;
+          cursor: not-allowed;
+        }
+
+        .profile-page label {
+          font-size: 13px;
+          font-weight: 700;
+          color: #344b3b;
+        }
+
+        .profile-page button {
+          transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .profile-page .profile-grid {
+          align-items: start;
+        }
+
+        .profile-page .profile-form-card,
+        .profile-page .profile-summary-card {
+          border: 1px solid #e8f0e9;
+        }
+
+        .profile-page .profileName {
+          margin: 0;
+          font-size: 22px;
+          color: #14532d;
+        }
+
+        .profile-page .avatarFallback {
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #dcfce7;
+          color: #166534;
+          font-size: 38px;
+          font-weight: 800;
+          border: 4px solid #bbf7d0;
+        }
+
+        .profile-page .saveButton {
+          width: 100%;
+          border: none;
+          background: #166534;
+          color: #fff;
+          padding: 14px;
+          border-radius: 11px;
+          cursor: pointer;
+          font-size: 15px;
+          font-weight: 700;
+          margin-top: 8px;
+        }
+
+        .profile-page .saveButton:hover:not(:disabled) {
+          background: #14532d;
+          box-shadow: 0 5px 14px rgba(22,101,52,.18);
+        }
+
+        @media(max-width:760px) {
+          .profile-page {
+            padding: 18px 12px 90px !important;
+            background: #f3faf5 !important;
+          }
+
+          .profile-page .profile-container {
+            max-width: 100%;
+          }
+
+          .profile-page .profile-grid {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 15px !important;
+          }
+
+          .profile-page .profile-summary-card {
+            position: static !important;
+            width: 100%;
+            padding: 19px 16px !important;
+            border-radius: 18px !important;
+            box-shadow: 0 5px 18px rgba(20,70,40,.06) !important;
+          }
+
+          .profile-page .profile-form-card {
+            width: 100%;
+            padding: 21px 17px !important;
+            border-radius: 18px !important;
+            box-shadow: 0 5px 18px rgba(20,70,40,.06) !important;
+          }
+
+          .profile-page .avatar {
+            width: 76px !important;
+            height: 76px !important;
+          }
+
+          .profile-page .avatarFallback {
+            width: 76px !important;
+            height: 76px !important;
+            font-size: 30px;
+          }
+
+          .profile-page .profileName {
+            font-size: 20px !important;
+          }
+
+          .profile-page .profileInfo {
+            margin-top: 16px !important;
+            padding-top: 5px !important;
+          }
+
+          .profile-page .infoRow {
+            padding: 11px 2px !important;
+            font-size: 12px !important;
+          }
+
+          .profile-page .infoRow strong {
+            max-width: 58%;
+            text-align: right;
+            overflow-wrap: anywhere;
+          }
+
+          .profile-page .sectionTitle {
+            font-size: 23px !important;
+          }
+
+          .profile-page .sectionHeader {
+            margin-bottom: 21px !important;
+          }
+
+          .profile-page .field {
+            margin-bottom: 17px !important;
+            gap: 8px !important;
+          }
+
+          .profile-page input {
+            min-height: 46px;
+            font-size: 14px;
+            border-radius: 10px;
+          }
+
+          .profile-page .twoColumn {
+            grid-template-columns: 1fr !important;
+            gap: 0 !important;
+          }
+
+          .profile-page .addressHeading {
+            padding: 15px 13px !important;
+            border: 1px solid #d9f0df;
+            border-radius: 13px !important;
+            margin: 19px 0 !important;
+          }
+
+          .profile-page .addressHeading h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #14532d;
+          }
+
+          .profile-page .addressHeading p {
+            margin: 4px 0 0;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #647568;
+          }
+
+          .profile-page .saveButton {
+            min-height: 49px;
+            border-radius: 12px !important;
+            font-size: 15px !important;
+            box-shadow: 0 5px 12px rgba(22,101,52,.18);
+          }
+
+          .profile-page .header {
+            align-items: center !important;
+            margin-bottom: 17px !important;
+            gap: 10px !important;
+          }
+
+          .profile-page .title {
+            font-size: 27px !important;
+          }
+
+          .profile-page .subtitle {
+            font-size: 12px;
+            line-height: 1.5;
+            max-width: 245px;
+          }
+
+          .profile-page .backButton {
+            padding: 9px 12px !important;
+            font-size: 12px;
+            white-space: nowrap;
+          }
+
+          .profile-page .successBox,
+          .profile-page .errorBox {
+            font-size: 13px;
+            line-height: 1.5;
+          }
+        }
+
+        @media(max-width:380px) {
+          .profile-page .profile-form-card {
+            padding: 18px 13px !important;
+          }
+
+          .profile-page .title {
+            font-size: 24px !important;
+          }
+
+          .profile-page .backButton {
+            padding: 8px 10px !important;
+          }
+        }
+      `}</style>
+
+      <div style={styles.container} className="profile-container">
+
         {/* HEADER */}
-        <div style={styles.header}>
+        <div style={styles.header} className="header">
           <div>
             <span style={styles.eyebrow}>ASUNAM FOOD</span>
-            <h1 style={styles.title}>My Profile</h1>
-            <p style={styles.subtitle}>
+
+            <h1 style={styles.title} className="title">
+              My Profile
+            </h1>
+
+            <p style={styles.subtitle} className="subtitle">
               Manage your personal details and delivery address.
             </p>
           </div>
 
           <button
             style={styles.backButton}
+            className="backButton"
             onClick={() => {
               window.location.href = "/";
             }}
@@ -244,27 +518,32 @@ const Profile = () => {
           </div>
         )}
 
-        <div style={styles.grid}>
-          {/* PROFILE CARD */}
-          <section style={styles.profileCard}>
+        <div style={styles.grid} className="profile-grid">
+
+          {/* PROFILE SUMMARY */}
+          <section
+            style={styles.profileCard}
+            className="profile-summary-card"
+          >
             <div style={styles.avatarWrap}>
               {formData.profileImage ? (
                 <img
                   src={formData.profileImage}
                   alt="Profile"
+                  className="avatar"
                   style={styles.avatar}
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                   }}
                 />
               ) : (
-                <div style={styles.avatarFallback}>
+                <div className="avatarFallback">
                   {firstLetter}
                 </div>
               )}
             </div>
 
-            <h2 style={styles.profileName}>
+            <h2 className="profileName">
               {profile?.name || "User"}
             </h2>
 
@@ -276,31 +555,39 @@ const Profile = () => {
               {profile?.role || "customer"}
             </span>
 
-            <div style={styles.profileInfo}>
-              <div style={styles.infoRow}>
+            <div style={styles.profileInfo} className="profileInfo">
+
+              <div style={styles.infoRow} className="infoRow">
                 <span>📧 Email</span>
                 <strong>{profile?.email || "-"}</strong>
               </div>
 
-              <div style={styles.infoRow}>
+              <div style={styles.infoRow} className="infoRow">
                 <span>📱 Phone</span>
                 <strong>{profile?.phone || "Not added"}</strong>
               </div>
 
-              <div style={styles.infoRow}>
+              <div style={styles.infoRow} className="infoRow">
                 <span>🟢 Account</span>
                 <strong>
                   {profile?.isActive ? "Active" : "Inactive"}
                 </strong>
               </div>
+
             </div>
           </section>
 
-          {/* EDIT FORM */}
-          <section style={styles.formCard}>
-            <div style={styles.sectionHeader}>
+          {/* EDIT PROFILE FORM */}
+          <section
+            style={styles.formCard}
+            className="profile-form-card"
+          >
+            <div style={styles.sectionHeader} className="sectionHeader">
               <div>
-                <span style={styles.eyebrow}>PERSONAL DETAILS</span>
+                <span style={styles.eyebrow}>
+                  PERSONAL DETAILS
+                </span>
+
                 <h2 style={styles.sectionTitle}>
                   Edit Profile
                 </h2>
@@ -308,8 +595,9 @@ const Profile = () => {
             </div>
 
             <form onSubmit={handleSubmit}>
+
               {/* NAME */}
-              <div style={styles.field}>
+              <div style={styles.field} className="field">
                 <label>Full Name</label>
 
                 <input
@@ -321,8 +609,8 @@ const Profile = () => {
                 />
               </div>
 
-              {/* EMAIL - READ ONLY */}
-              <div style={styles.field}>
+              {/* EMAIL */}
+              <div style={styles.field} className="field">
                 <label>Email</label>
 
                 <input
@@ -337,7 +625,7 @@ const Profile = () => {
               </div>
 
               {/* PHONE */}
-              <div style={styles.field}>
+              <div style={styles.field} className="field">
                 <label>Phone Number</label>
 
                 <input
@@ -350,7 +638,7 @@ const Profile = () => {
               </div>
 
               {/* PROFILE IMAGE */}
-              <div style={styles.field}>
+              <div style={styles.field} className="field">
                 <label>Profile Image URL</label>
 
                 <input
@@ -362,19 +650,24 @@ const Profile = () => {
                 />
               </div>
 
-              {/* ADDRESS */}
-              <div style={styles.addressHeading}>
+              {/* DELIVERY ADDRESS */}
+              <div
+                style={styles.addressHeading}
+                className="addressHeading"
+              >
                 <span>📍</span>
 
                 <div>
                   <h3>Delivery Address</h3>
+
                   <p>
                     This address can be used during checkout.
                   </p>
                 </div>
               </div>
 
-              <div style={styles.field}>
+              {/* STREET */}
+              <div style={styles.field} className="field">
                 <label>Street / Address</label>
 
                 <input
@@ -386,8 +679,10 @@ const Profile = () => {
                 />
               </div>
 
-              <div style={styles.twoColumn}>
-                <div style={styles.field}>
+              {/* CITY + STATE */}
+              <div style={styles.twoColumn} className="twoColumn">
+
+                <div style={styles.field} className="field">
                   <label>City</label>
 
                   <input
@@ -399,7 +694,7 @@ const Profile = () => {
                   />
                 </div>
 
-                <div style={styles.field}>
+                <div style={styles.field} className="field">
                   <label>State</label>
 
                   <input
@@ -410,9 +705,11 @@ const Profile = () => {
                     placeholder="State"
                   />
                 </div>
+
               </div>
 
-              <div style={styles.field}>
+              {/* PINCODE */}
+              <div style={styles.field} className="field">
                 <label>Pincode</label>
 
                 <input
@@ -422,11 +719,14 @@ const Profile = () => {
                   onChange={handleChange}
                   placeholder="6-digit pincode"
                   maxLength={6}
+                  inputMode="numeric"
                 />
               </div>
 
+              {/* SAVE BUTTON */}
               <button
                 type="submit"
+                className="saveButton"
                 style={{
                   ...styles.saveButton,
                   opacity: saving ? 0.7 : 1,
@@ -435,6 +735,7 @@ const Profile = () => {
               >
                 {saving ? "Saving..." : "Save Changes"}
               </button>
+
             </form>
           </section>
         </div>
@@ -443,6 +744,9 @@ const Profile = () => {
   );
 };
 
+// ======================================
+// STYLES
+// ======================================
 const styles = {
   page: {
     minHeight: "100vh",
@@ -527,26 +831,6 @@ const styles = {
     border: "4px solid #dcfce7",
   },
 
-  avatarFallback: {
-    width: "100px",
-    height: "100px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#dcfce7",
-    color: "#166534",
-    fontSize: "38px",
-    fontWeight: "800",
-    border: "4px solid #bbf7d0",
-  },
-
-  profileName: {
-    margin: "0",
-    fontSize: "22px",
-    color: "#14532d",
-  },
-
   profileEmail: {
     margin: "6px 0 12px",
     color: "#888",
@@ -605,10 +889,6 @@ const styles = {
     marginBottom: "16px",
   },
 
-  fieldLabel: {
-    fontWeight: "600",
-  },
-
   helpText: {
     fontSize: "11px",
     color: "#999",
@@ -628,16 +908,6 @@ const styles = {
     background: "#f0fdf4",
     borderRadius: "12px",
     margin: "10px 0 18px",
-  },
-
-  addressHeadingH3: {
-    margin: 0,
-  },
-
-  addressHeadingP: {
-    margin: "3px 0 0",
-    color: "#888",
-    fontSize: "12px",
   },
 
   saveButton: {

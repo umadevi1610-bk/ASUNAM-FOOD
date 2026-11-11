@@ -8,7 +8,12 @@ import {
 import { useAuth } from "../context/AuthContext";
 
 const Orders = () => {
-  const { user, token, isAuthenticated } = useAuth();
+ const {
+  user,
+  token,
+  isAuthenticated,
+  loading: authLoading,
+} = useAuth();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +41,13 @@ const Orders = () => {
     let isActive = true;
 
     const loadOrders = async () => {
+      if (authLoading) {
+  return (
+    <div style={styles.centerMessage}>
+      <p>Loading...</p>
+    </div>
+  );
+}
       if (!isAuthenticated || !token) {
         setOrders([]);
         setLoading(false);

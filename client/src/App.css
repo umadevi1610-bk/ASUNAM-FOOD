@@ -1559,3 +1559,107 @@ img {
 .footer-links a:hover {
   color: #176b43;
 }
+/* PROFILE PAGE - MOBILE ONLY */
+@media (max-width: 760px) {
+  .profile-page {
+    padding: 22px 12px !important;
+    overflow-x: hidden;
+  }
+
+  .profile-container {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .profile-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .profile-summary-card {
+    position: static !important;
+    padding: 22px 16px !important;
+  }
+
+  .profile-form-card {
+    padding: 20px 15px !important;
+    min-width: 0;
+  }
+
+  .profile-form-card input {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .profile-form-card > * {
+    min-width: 0;
+  }
+
+  .profile-form-card form {
+    min-width: 0;
+  }
+
+  .profile-form-card form > div {
+    min-width: 0;
+  }
+
+  .profile-form-card form > div[style] {
+    min-width: 0;
+  }
+
+  .profile-form-card form > div:nth-of-type(6) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+    /* MOBILE HEADER */
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cart-btn,
+  .profile-btn {
+    display: none;
+  }
+
+  .mobile-veg-toggle {
+    display: grid;
+    width: 100px;
+    padding: 5px 7px;
+    align-items: center;
+  }
+
+  /* HIDE DESKTOP SEARCH AREA BY DEFAULT */
+
+  .search-area {
+    display: none;
+  }
+
+  .search-area.mobile-search-visible {
+    display: block;
+    padding: 12px 13px;
+  }
+
+  .search-area.mobile-search-visible .search-box {
+    width: 100%;
+  }
+
+  .search-area > .veg-toggle {
+    display: none;
+  }
+
+  /* HIDE PROMOTIONAL BANNER */
+
+  .promo-banner {
+    display: none;
+  }
+  .nav-actions .header-orders-btn,
+  .nav-actions .cart-btn,
+  .nav-actions .profile-btn {
+    display: none;
+  }
+}

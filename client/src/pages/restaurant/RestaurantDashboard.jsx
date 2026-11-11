@@ -1303,7 +1303,7 @@ styleSheet.innerHTML = `
     }
 
     .asunam-action-grid {
-      grid-template-columns: 1fr !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
     .asunam-order-card {
@@ -1317,26 +1317,49 @@ styleSheet.innerHTML = `
   }
 
   @media (max-width: 600px) {
-    .asunam-stats-grid {
-      grid-template-columns: 1fr !important;
+    .asunam-container {
+      padding: 18px 12px 36px !important;
     }
 
     .asunam-hero {
       flex-direction: column !important;
       align-items: flex-start !important;
+      gap: 10px !important;
+      padding: 20px 17px !important;
+      border-radius: 18px !important;
     }
 
     .asunam-hero-icon {
       display: none !important;
     }
 
-    .asunam-container {
-      padding-left: 14px !important;
-      padding-right: 14px !important;
+    .asunam-stats-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+    }
+
+    .asunam-action-grid {
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
     }
 
     .asunam-order-card {
-      padding: 15px !important;
+      padding: 13px !important;
+      gap: 12px !important;
+    }
+
+    .asunam-order-right {
+      align-items: stretch !important;
+      width: 100% !important;
+    }
+
+    .asunam-container,
+    .asunam-container * {
+      min-width: 0;
+    }
+
+    .asunam-container {
+      overflow-wrap: anywhere;
     }
   }
 

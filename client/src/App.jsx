@@ -38,7 +38,7 @@ const categories = [
   },
   {
     name: "Biryani",
-    image: "https://images.unsplash.com/photo-1563379091339-03246963d96c?w=200",
+    image: "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&w=200&q=80",
   },
   {
     name: "South Indian",
@@ -79,26 +79,45 @@ const categories = [
 // ======================================
 
 const categoryKeywords = {
-  "Biryani": ["biryani"],
+  Biryani: ["biryani"],
   "South Indian": [
-    "south indian", "dosa", "idli", "uttapam",
-    "sambar", "pongal", "tiffin",
+    "south indian",
+    "dosa",
+    "idli",
+    "uttapam",
+    "sambar",
+    "pongal",
+    "tiffin",
   ],
   "North Indian": [
-    "north indian", "naan", "roti", "paneer",
-    "punjabi", "paratha",
+    "north indian",
+    "naan",
+    "roti",
+    "paneer",
+    "punjabi",
+    "paratha",
   ],
-  "Chicken": ["chicken"],
-  "Pizza": ["pizza"],
-  "Burger": ["burger"],
-  "Chinese": [
-    "chinese", "noodles", "manchurian", "fried rice",
+  Chicken: ["chicken"],
+  Pizza: ["pizza"],
+  Burger: ["burger"],
+  Chinese: [
+    "chinese",
+    "noodles",
+    "manchurian",
+    "fried rice",
   ],
-  "Desserts": [
-    "dessert", "cake", "ice cream", "sweet",
+  Desserts: [
+    "dessert",
+    "cake",
+    "ice cream",
+    "sweet",
   ],
-  "Drinks": [
-    "drink", "juice", "shake", "coffee", "tea",
+  Drinks: [
+    "drink",
+    "juice",
+    "shake",
+    "coffee",
+    "tea",
   ],
 };
 
@@ -142,6 +161,9 @@ function App() {
 
   const [showCart, setShowCart] = useState(false);
 
+  // Mobile search visibility
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+
   const { isAuthenticated, loading: authLoading } = useAuth();
 
   const {
@@ -184,6 +206,16 @@ function App() {
 
     return () => clearTimeout(timer);
   }, [showSplash, authLoading, finishSplash]);
+
+  // ======================================
+  // MOBILE SEARCH FOCUS
+  // ======================================
+
+  useEffect(() => {
+    if (!showMobileSearch) return;
+
+    document.getElementById("home-food-search")?.focus();
+  }, [showMobileSearch]);
 
   // ======================================
   // LOAD DATA
@@ -261,7 +293,9 @@ function App() {
       } catch (error) {
         if (!cancelled) {
           console.error(error);
-          setFetchError("Unable to load food. Please check your connection.");
+          setFetchError(
+            "Unable to load food. Please check your connection."
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -319,9 +353,16 @@ function App() {
   // ======================================
 
   const focusSearch = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setShowMobileSearch(true);
 
-    document.getElementById("home-food-search")?.focus();
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  const closeMobileSearch = () => {
+    setShowMobileSearch(false);
   };
 
   const handleSearch = () => {
@@ -399,9 +440,9 @@ function App() {
     return <RestaurantOrders />;
   }
 
-if (currentPath === "/delivery/onboarding") {
-  return <DeliveryProfile />;
-}
+  if (currentPath === "/delivery/onboarding") {
+    return <DeliveryProfile />;
+  }
 
   if (currentPath === "/restaurant/profile") {
     return <RestaurantProfile />;
@@ -439,7 +480,11 @@ if (currentPath === "/delivery/onboarding") {
       {/* HEADER */}
 
       <header className="navbar">
-        <a href="#home" className="logo">
+        <a
+          href="#home"
+          className="logo"
+          onClick={closeMobileSearch}
+        >
           <div className="logo-mark">A</div>
 
           <div>
@@ -456,9 +501,28 @@ if (currentPath === "/delivery/onboarding") {
         </nav>
 
         <div className="nav-actions">
+
+          {/* MOBILE VEG MODE */}
+
+          <button
+            type="button"
+            className={`veg-toggle mobile-veg-toggle ${
+              vegMode ? "veg-enabled" : ""
+            }`}
+            onClick={() => setVegMode((prev) => !prev)}
+            aria-label="Toggle vegetarian mode"
+            aria-pressed={vegMode}
+          >
+            <span>VEG</span>
+            <small>MODE</small>
+            <i />
+          </button>
+
           <button
             className="header-orders-btn"
-            onClick={() => window.location.href = "/orders"}
+            onClick={() => {
+              window.location.href = "/orders";
+            }}
           >
             Orders
           </button>
@@ -474,7 +538,9 @@ if (currentPath === "/delivery/onboarding") {
 
           <button
             className="profile-btn"
-            onClick={() => window.location.href = "/profile"}
+            onClick={() => {
+              window.location.href = "/profile";
+            }}
             aria-label="Profile"
           >
             👤
@@ -486,7 +552,11 @@ if (currentPath === "/delivery/onboarding") {
 
         {/* SEARCH AND VEG FILTER */}
 
-        <section className="search-area">
+        <section
+          className={`search-area ${
+            showMobileSearch ? "mobile-search-visible" : ""
+          }`}
+        >
           <div className="search-box">
             <span>🔍</span>
 
@@ -520,9 +590,11 @@ if (currentPath === "/delivery/onboarding") {
             </button>
           </div>
 
+          {/* DESKTOP VEG MODE */}
+
           <button
             className={`veg-toggle ${vegMode ? "veg-enabled" : ""}`}
-            onClick={() => setVegMode(!vegMode)}
+            onClick={() => setVegMode((prev) => !prev)}
             type="button"
             aria-pressed={vegMode}
           >
@@ -597,9 +669,7 @@ if (currentPath === "/delivery/onboarding") {
           <button
             type="button"
             className="filter-chip"
-            onClick={() => {
-              setVegMode(!vegMode);
-            }}
+            onClick={() => setVegMode((prev) => !prev)}
           >
             ♧ {vegMode ? "Veg only ✓" : "Filters"}
           </button>
@@ -607,7 +677,7 @@ if (currentPath === "/delivery/onboarding") {
           <button
             type="button"
             className={`filter-chip ${under250 ? "filter-active" : ""}`}
-            onClick={() => setUnder250(!under250)}
+            onClick={() => setUnder250((prev) => !prev)}
           >
             Under ₹250 {under250 ? "✓" : ""}
           </button>
@@ -615,7 +685,7 @@ if (currentPath === "/delivery/onboarding") {
           <button
             type="button"
             className={`filter-chip ${topRated ? "filter-active" : ""}`}
-            onClick={() => setTopRated(!topRated)}
+            onClick={() => setTopRated((prev) => !prev)}
           >
             ★ Top rated {topRated ? "✓" : ""}
           </button>
@@ -641,7 +711,9 @@ if (currentPath === "/delivery/onboarding") {
           </div>
 
           {loading ? (
-            <div className="loading-message">Finding delicious places...</div>
+            <div className="loading-message">
+              Finding delicious places...
+            </div>
           ) : fetchError ? (
             <div className="loading-message">{fetchError}</div>
           ) : filteredRestaurants.length > 0 ? (
@@ -670,9 +742,11 @@ if (currentPath === "/delivery/onboarding") {
                       loading="lazy"
                     />
 
-                    <span className={`restaurant-status ${
-                      restaurant.isOpen ? "open" : "closed"
-                    }`}>
+                    <span
+                      className={`restaurant-status ${
+                        restaurant.isOpen ? "open" : "closed"
+                      }`}
+                    >
                       {restaurant.isOpen ? "OPEN" : "CLOSED"}
                     </span>
                   </div>
@@ -762,7 +836,11 @@ if (currentPath === "/delivery/onboarding") {
                       loading="lazy"
                     />
 
-                    <span className={food.isVeg ? "veg-label" : "nonveg-label"}>
+                    <span
+                      className={
+                        food.isVeg ? "veg-label" : "nonveg-label"
+                      }
+                    >
                       {food.isVeg ? "● VEG" : "● NON VEG"}
                     </span>
 
@@ -1016,12 +1094,20 @@ if (currentPath === "/delivery/onboarding") {
       {/* MOBILE BOTTOM NAVIGATION */}
 
       <nav className="mobile-bottom-nav">
-        <a className="mobile-nav-active" href="#home">
+        <a
+          className="mobile-nav-active"
+          href="#home"
+          onClick={closeMobileSearch}
+        >
           <span>⌂</span>
           <small>Home</small>
         </a>
 
-        <button type="button" onClick={focusSearch}>
+        <button
+          type="button"
+          onClick={focusSearch}
+          aria-label="Open search"
+        >
           <span>⌕</span>
           <small>Search</small>
         </button>
@@ -1036,7 +1122,9 @@ if (currentPath === "/delivery/onboarding") {
           onClick={() => setShowCart(true)}
         >
           <span>🛒</span>
-          <small>Cart {itemCount > 0 ? `(${itemCount})` : ""}</small>
+          <small>
+            Cart {itemCount > 0 ? `(${itemCount})` : ""}
+          </small>
         </button>
 
         <a href="/profile">
